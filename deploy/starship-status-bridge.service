@@ -1,0 +1,16 @@
+[Unit]
+Description=Starship OS Status Bridge — NATS telemetry to JSON file
+After=nats.service staragent.service
+Requires=nats.service
+PartOf=starship-dashboard.target
+
+[Service]
+Type=simple
+User=tech
+Environment=NATS_URL=nats://127.0.0.1:4222
+ExecStart=/home/tech/.hermes/hermes-agent/venv/bin/python3 /home/tech/starship-os/tray/starship-status.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=starship-dashboard.target

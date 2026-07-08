@@ -29,7 +29,9 @@ log = logging.getLogger("agent-daemon")
 
 NATS_URL = os.getenv("NATS_URL", "nats://127.0.0.1:4222")
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434")
-AGENTS_DIR = Path(os.getenv("STARSHIP_ROOT", os.path.dirname(os.path.abspath(__file__)))) / "agents"
+_SCRIPT_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
+_PROJECT_ROOT = Path(os.getenv("STARSHIP_ROOT", str(_SCRIPT_DIR.parent)))
+AGENTS_DIR = _PROJECT_ROOT / "agents"
 
 
 def load_agent_config(name):
@@ -62,7 +64,48 @@ async def query_ollama(model, prompt, system=None):
         return result.get("response", "")
 
 
-async def process_command(agent_name, config, subject, payload):
+async def _consume_msgs(sub, handler):
+    """Consume messages from a subscription and pass to handler."""
+    try:
+        async for msg in sub.messages:
+            await handler(msg)
+    except asyncio.CancelledError:
+        pass
+
+
+SKILLS_DIR = _PROJECT_ROOT / "skills"
+SOULS_DIR = _PROJECT_ROOT / "souls"
+
+
+def load_skill_content(skill_names):
+    """Load skill markdown files and return their content."""
+    parts = []
+    for name in (skill_names or []):
+        skill_path = SKILLS_DIR / name / "SKILL.md"
+        if skill_path.exists():
+            try:
+                content = skill_path.read_text()
+                parts.append(f"=== Skill: {name} ===\n{content.strip()}\n")
+            except Exception as e:
+                log.warning("Failed to load skill '%s': %s", name, e)
+    return "\n\n".join(parts)
+
+
+def load_soul(agent_name):
+    """Load the SOUL.md personality file for an agent."""
+    soul_path = SOULS_DIR / agent_name / "SOUL.md"
+    if soul_path.exists():
+        try:
+            content = soul_path.read_text().strip()
+            log.info("Loaded soul for '%s' (%d chars)", agent_name, len(content))
+            return content
+        except Exception as e:
+            log.warning("Failed to load soul for '%s': %s", agent_name, e)
+    log.info("No soul file found for '%s', using generic personality", agent_name)
+    return None
+
+
+async def process_command(agent_name, config, subject, payload, telemetry=None):
     """Process a single command and return the result."""
     model = config.get("model", "qwen2.5:7b")
     role = config.get("role", "assistant")
@@ -72,12 +115,65 @@ async def process_command(agent_name, config, subject, payload):
     command = payload.get("command", "")
     args = payload.get("args", {})
     
-    system_prompt = (
-        f"You are {agent_name}, the {role} in the Starship OS agent mesh.\n"
-        f"Your capabilities: {', '.join(capabilities) if capabilities else 'general assistance'}.\n"
-        f"You operate via the NATS agent bus. Respond concisely and accurately.\n"
-        f"Current time: {datetime.now().isoformat()}"
+    telemetry_context = ""
+    if telemetry:
+        parts = []
+        # Handle flat StarAgent telemetry (single "starship.telemetry" message)
+        if "full" in telemetry:
+            f = telemetry["full"]
+            cpu = f.get("cpu", "N/A")
+            mu = f.get("memory_used", 0) // (1024*1024)
+            mt = f.get("memory_total", 0) // (1024*1024)
+            du = f.get("disk_used", 0) // (1024*1024*1024)
+            dt = f.get("disk_total", 0) // (1024*1024*1024)
+            rx = f.get("rx_bytes", 0) // 1024
+            tx = f.get("tx_bytes", 0) // 1024
+            parts.append(f"CPU: {cpu}% | Memory: {mu}MB/{mt}MB | Disk: {du}GB/{dt}GB | Net RX: {rx}KB TX: {tx}KB")
+        # Handle individual subject telemetry (future use)
+        if "cpu" in telemetry:
+            c = telemetry["cpu"]
+            parts.append(f"CPU Usage: {c.get('percent', 'N/A')}%")
+        if "mem" in telemetry:
+            m = telemetry["mem"]
+            mu = m.get("used", 0) // (1024*1024)
+            mt = m.get("total", 0) // (1024*1024)
+            parts.append(f"Memory: {mu}MB / {mt}MB")
+        if "disk" in telemetry:
+            d = telemetry["disk"]
+            du = d.get("used", 0) // (1024*1024*1024)
+            dt = d.get("total", 0) // (1024*1024*1024)
+            parts.append(f"Disk: {du}GB / {dt}GB")
+        if "net" in telemetry:
+            n = telemetry["net"]
+            parts.append(f"Net RX: {n.get('rx_bytes', 0)//1024}KB TX: {n.get('tx_bytes', 0)//1024}KB")
+        if parts:
+            telemetry_context = "Live System Telemetry:\n" + "\n".join(f"  {p}" for p in parts) + "\n"
+    
+    soul = load_soul(agent_name)
+    skill_context = load_skill_content(skills)
+    skill_block = f"\n\n## Active Skills\n{skill_context}" if skill_context else ""
+    
+    operational_context = (
+        f"\n\n## Operational Context\n"
+        f"You are connected via the Starship OS NATS agent bus.\n"
+        f"{telemetry_context}"
+        f"Current timestamp: {datetime.now().isoformat()}"
     )
+    
+    if soul:
+        system_prompt = (
+            f"{soul}\n"
+            f"{skill_block}"
+            f"{operational_context}"
+        )
+    else:
+        system_prompt = (
+            f"You are {agent_name}, the {role} in the Starship OS agent mesh.\n"
+            f"Your capabilities: {', '.join(capabilities) if capabilities else 'general assistance'}.\n"
+            f"You operate via the NATS agent bus. Respond concisely and accurately.\n"
+            f"{skill_block}"
+            f"{operational_context}"
+        )
     
     user_prompt = f"Command: {command}\n"
     if args:
@@ -116,6 +212,31 @@ async def run_agent(agent_name, model_override=None):
             "timestamp": datetime.now().isoformat(),
         }).encode())
         
+        # Subscribe to telemetry for live system context
+        telemetry_cache = {}
+        telemetry_subjects = ["starship.telemetry.>", "starship.telemetry"]
+        telemetry_tasks = []
+        
+        async def update_telemetry(msg):
+            try:
+                data = json.loads(msg.data.decode())
+                parts = msg.subject.split(".")
+                if len(parts) >= 3:
+                    key = parts[-1]  # e.g., "cpu" from "starship.telemetry.cpu"
+                else:
+                    key = "full"  # flat "starship.telemetry" -> store as "full"
+                telemetry_cache[key] = data
+                telemetry_cache["_timestamp"] = datetime.now().isoformat()
+            except (json.JSONDecodeError, IndexError):
+                pass
+        
+        for ts in telemetry_subjects:
+            sub = await nc.subscribe(ts)
+            log.info("Subscribed to telemetry: %s", ts)
+            task = asyncio.create_task(_consume_msgs(sub, update_telemetry))
+            telemetry_tasks.append(task)
+        
+        # Subscribe to commands
         sub = await nc.subscribe(cmd_subject)
         log.info("Subscribed to: %s", cmd_subject)
         
@@ -133,7 +254,7 @@ async def run_agent(agent_name, model_override=None):
                     "timestamp": datetime.now().isoformat(),
                 }).encode())
                 
-                response = await process_command(agent_name, config, subject, data)
+                response = await process_command(agent_name, config, subject, data, telemetry_cache)
                 
                 # Publish response to status (for simple replies) or a reply subject
                 reply_to = data.get("reply_to", status_subject)
@@ -182,6 +303,9 @@ async def run_agent(agent_name, model_override=None):
                 "timestamp": datetime.now().isoformat(),
             }).encode())
             await nc.close()
+        if 'telemetry_tasks' in locals():
+            for t in telemetry_tasks:
+                t.cancel()
     except Exception as e:
         log.error("Fatal error: %s", e)
         sys.exit(1)

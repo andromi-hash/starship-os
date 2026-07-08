@@ -1,0 +1,8 @@
+[Unit]
+Description=Starship OS Dashboard — status bridge + web UI
+After=nats.target
+BindsTo=starship-agent-mesh.target
+Wants=starship-status-bridge.service starship-dashboard-web.service
+
+[Install]
+WantedBy=starship-agent-mesh.target

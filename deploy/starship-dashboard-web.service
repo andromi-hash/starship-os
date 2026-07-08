@@ -1,0 +1,15 @@
+[Unit]
+Description=Starship OS Web Dashboard — HTTP server on port 8899
+After=starship-status-bridge.service
+Requires=starship-status-bridge.service
+PartOf=starship-dashboard.target
+
+[Service]
+Type=simple
+User=tech
+ExecStart=/home/tech/.hermes/hermes-agent/venv/bin/python3 /home/tech/starship-os/dashboard/server.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=starship-dashboard.target

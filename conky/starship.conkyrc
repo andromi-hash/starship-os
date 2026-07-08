@@ -1,0 +1,70 @@
+conky.config = {
+    background = true,
+    update_interval = 2,
+    double_buffer = true,
+    no_buffers = true,
+    text_buffer_size = 2048,
+    own_window = true,
+    own_window_type = 'desktop',
+    own_window_transparent = false,
+    own_window_argb_visual = true,
+    own_window_argb_value = 180,
+    own_window_hints = 'undecorated,below,sticky,skip_taskbar,skip_pager',
+    border_inner_margin = 12,
+    border_outer_margin = 0,
+    alignment = 'top_right',
+    gap_x = 16,
+    gap_y = 60,
+    minimum_width = 280,
+    maximum_width = 280,
+    default_color = 'a0a0a0',
+    color1 = 'ffffff',
+    color2 = '4fc3f7',
+    color3 = '81c784',
+    color4 = 'ffb74d',
+    color5 = 'e57373',
+    font = 'Ubuntu:size=10',
+    use_xft = true,
+    xftalpha = 0.9,
+    uppercase = false,
+    draw_shades = false,
+    draw_outline = false,
+    draw_borders = false,
+    cpu_avg_samples = 2,
+    net_avg_samples = 2,
+};
+
+conky.text = [[
+${font Ubuntu:bold:size=11}${color2}⭐ STARSHIP OS${color}${font}
+${voffset 4}${color1}Agent Mesh${color}${hr 2}
+
+${font Ubuntu:size=10}${color3}●${color}  Proxy    ${goto 180}${execi 4 python3 -c "import json; d=json.load(open('/tmp/starship-status.json')); print(d['agents'].get('proxy',{}).get('status','?'))"}${font}
+${font Ubuntu:size=10}${color3}●${color}  Romi     ${goto 180}${execi 4 python3 -c "import json; d=json.load(open('/tmp/starship-status.json')); print(d['agents'].get('romi',{}).get('status','?'))"}${font}
+${font Ubuntu:size=10}${color3}●${color}  Ergo     ${goto 180}${execi 4 python3 -c "import json; d=json.load(open('/tmp/starship-status.json')); print(d['agents'].get('ergo',{}).get('status','?'))"}${font}
+
+${voffset 4}${color1}System Telemetry${color}${hr 2}
+
+${font Ubuntu:size=10}CPU:   ${goto 60}${color2}${cpu}%${color} ${alignr}${cpubar 8,60}
+${font Ubuntu:size=10}RAM:   ${goto 60}${memperc}% ${alignr}$mem / $memmax
+${font Ubuntu:size=10}DISK:  ${goto 60}${diskutil /}% ${alignr}${fs_used /} / ${fs_size /}
+${font Ubuntu:size=10}NET:   ${goto 60}↓ ${downspeedf eth0} KB/s ${alignr}↑ ${upspeedf eth0} KB/s
+
+${voffset 4}${color1}Processes${color}${hr 2}
+${font Ubuntu:size=10}Running: ${goto 100}${running_processes}${alignr}Total: ${total_processes}
+${font Ubuntu:size=10}${top name 1} ${alignr}${top cpu 1}%
+${font Ubuntu:size=10}${top name 2} ${alignr}${top cpu 2}%
+${font Ubuntu:size=10}${top name 3} ${alignr}${top cpu 3}%
+
+${voffset 4}${color1}Last Agent Activity${color}${hr 2}
+${font Ubuntu:size=9}${execi 4 python3 -c "
+import json
+d=json.load(open('/tmp/starship-status.json'))
+msgs = d.get('messages', [])
+for m in msgs[:3]:
+    resp = m.get('response','')[:80]
+    print(f\"[{m.get('agent','?')}] {resp}\")
+"}
+
+${voffset 4}${color4}━━━━━━━━━━━━━━━━━━━━━━━━━━━━${color}
+${font Ubuntu:size=8}${color1}${time %A %b %d %Y  %H:%M:%S}${color}
+]];

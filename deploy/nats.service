@@ -5,7 +5,7 @@ After=network.target
 [Service]
 Type=simple
 User=tech
-ExecStart=/usr/local/bin/nats-server -c /home/tech/starship-os/nats/agent-bus.conf
+ExecStart=/usr/sbin/nats-server -c /home/tech/starship-os/nats/agent-bus.conf
 ExecReload=/bin/kill -s HUP $MAINPID
 Restart=always
 RestartSec=3

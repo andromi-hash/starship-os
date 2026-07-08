@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"bufio"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -98,6 +100,77 @@ var agentStopCmd = &cobra.Command{
 	},
 }
 
+var agentChatCmd = &cobra.Command{
+	Use:   "chat <name>",
+	Short: "Interactive chat session with an agent",
+	Long:  `Open an interactive chat session with an agent (proxy, romi, ergo) via NATS request-reply.`,
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		name := args[0]
+
+		nc, err := nats.Connect("127.0.0.1:4222", nats.Timeout(3*time.Second))
+		if err != nil {
+			fmt.Printf("NATS connection failed: %v\n", err)
+			return
+		}
+		defer nc.Close()
+
+		inbox := nc.NewRespInbox()
+		sub, err := nc.SubscribeSync(inbox)
+		if err != nil {
+			fmt.Printf("Subscribe failed: %v\n", err)
+			return
+		}
+		nc.Flush()
+
+		fmt.Printf("Connecting to %s... (type '/exit' to quit)\n\n", name)
+
+		scanner := bufio.NewScanner(os.Stdin)
+		for {
+			fmt.Printf("\033[33m%s> \033[0m", name)
+			if !scanner.Scan() {
+				break
+			}
+			line := strings.TrimSpace(scanner.Text())
+			if line == "" {
+				continue
+			}
+			if line == "/exit" || line == "/quit" {
+				fmt.Println("Exiting.")
+				break
+			}
+
+			subject := fmt.Sprintf("starship.agent.%s.command.chat", name)
+			msg := fmt.Sprintf(`{"command":"%s","args":{}}`, line)
+
+			if err := nc.PublishRequest(subject, inbox, []byte(msg)); err != nil {
+				fmt.Printf("Publish failed: %v\n", err)
+				continue
+			}
+
+			reply, err := sub.NextMsg(30 * time.Second)
+			if err != nil {
+				fmt.Printf("No response from agent (timeout): %v\n", err)
+				continue
+			}
+
+			var result map[string]interface{}
+			if err := json.Unmarshal(reply.Data, &result); err != nil {
+				fmt.Printf("Parse error: %v\n", err)
+				continue
+			}
+
+			response, _ := result["response"].(string)
+			if response != "" {
+				fmt.Printf("\033[36m%s\033[0m\n", response)
+			} else {
+				fmt.Printf("%s\n", string(reply.Data))
+			}
+			fmt.Println()
+		}
+	},
+}
+
 var agentSendCmd = &cobra.Command{
 	Use:   "send <agent> <command>",
 	Short: "Send a command to an agent via NATS",
@@ -163,5 +236,6 @@ func init() {
 	agentCmd.AddCommand(agentStatusCmd)
 	agentCmd.AddCommand(agentStopCmd)
 	agentCmd.AddCommand(agentSendCmd)
+	agentCmd.AddCommand(agentChatCmd)
 	rootCmd.AddCommand(agentCmd)
 }
