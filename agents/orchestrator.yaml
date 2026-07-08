@@ -1,0 +1,25 @@
+# Starship OS - Orchestrator Agent
+# Central coordinator that routes tasks to specialized agents
+
+name: orchestrator
+role: central_coordinator
+model: qwen2.5:7b  # local via Ollama
+provider: ollama
+
+capabilities:
+  - task_routing
+  - escalation
+  - priority_management
+  - inter_agent_communication
+
+subsystems:
+  - system_health
+  - knowledge_store
+  - security
+  - automation
+  - navigation
+
+toolsets:
+  - terminal
+  - file_operations
+  - web_search

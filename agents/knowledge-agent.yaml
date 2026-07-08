@@ -1,0 +1,21 @@
+# Knowledge Agent
+# Manages persistent knowledge, documentation, and lessons learned
+
+name: knowledge_store
+role: knowledge_manager
+model: qwen2.5:7b
+provider: ollama
+
+capabilities:
+  - document_indexing
+  - log_archival
+  - solution_recording
+  - cross_referencing
+
+skills:
+  - knowledge-store
+
+toolsets:
+  - file_operations
+  - web_search
+  - memory

@@ -1,0 +1,21 @@
+# System Health Agent
+# Monitors and maintains system resources and processes
+
+name: system_health
+role: system_monitor
+model: qwen2.5:7b
+provider: ollama
+
+capabilities:
+  - resource_monitoring
+  - process_management
+  - log_analysis
+  - alerting
+  - maintenance
+
+skills:
+  - system-health
+
+toolsets:
+  - terminal
+  - file_operations
