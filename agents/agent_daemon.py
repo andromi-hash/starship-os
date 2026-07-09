@@ -257,14 +257,17 @@ async def run_agent(agent_name, model_override=None):
                 response = await process_command(agent_name, config, subject, data, telemetry_cache)
                 
                 # Publish response to status (for simple replies) or a reply subject
-                reply_to = data.get("reply_to", status_subject)
-                await nc.publish(reply_to, json.dumps({
+                status_payload = json.dumps({
                     "agent": agent_name,
                     "status": "complete",
                     "command": data.get("command", ""),
                     "response": response,
                     "timestamp": datetime.now().isoformat(),
-                }).encode())
+                }).encode()
+                await nc.publish(status_subject, status_payload)
+                reply_to = data.get("reply_to", "")
+                if reply_to:
+                    await nc.publish(reply_to, status_payload)
                 
                 # If the message had a reply subject (NATS request-reply), respond directly
                 if msg.reply:

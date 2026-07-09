@@ -32,8 +32,19 @@ fi
 # 3. Start all Hermes agents
 echo "[3/3] Starting Hermes agents..."
 "$PROJECT_DIR/agents/run_agent.sh" start
-echo ""
 
+# 4. Start dashboard server
+if ! pgrep -f "$PROJECT_DIR/dashboard/server.py" > /dev/null 2>&1; then
+    echo "[4/4] Starting dashboard server..."
+    nohup "$HOME/.hermes/hermes-agent/venv/bin/python3" \
+        "$PROJECT_DIR/dashboard/server.py" > "$PROJECT_DIR/logs/dashboard.log" 2>&1 &
+    echo "  Dashboard at http://localhost:8899"
+fi
+
+# 5. Start tray indicator
+"$PROJECT_DIR/scripts/start-tray.sh"
+
+echo ""
 echo "=== All agents running ==="
 echo "Use '$PROJECT_DIR/agents/run_agent.sh status' to check status"
 echo "Use '$PROJECT_DIR/agents/run_agent.sh stop' to stop all agents"

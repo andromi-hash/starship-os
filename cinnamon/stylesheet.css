@@ -1,0 +1,149 @@
+/* Starship OS — Bridge Console Theme */
+/* Commonwealth Andromeda / Highguard Design Language */
+
+.starship-container {
+  background: #0A0E1A;
+  color: #E8E0D0;
+  font-family: "Inter", "Ubuntu", -apple-system, sans-serif;
+  font-size: 13px;
+  padding: 8px;
+  spacing: 4px;
+}
+
+/* Header */
+.starship-header {
+  spacing: 6px;
+  padding: 4px 0 8px 0;
+  border-bottom: 1px solid #1B2D45;
+}
+
+.starship-title {
+  font-family: "Orbitron", "Exo 2", "Inter", sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #00D4FF;
+  letter-spacing: 0.08em;
+}
+
+.starship-status-global {
+  font-size: 10px;
+  color: #00CC88;
+}
+
+/* Section titles */
+.section-title {
+  font-size: 9px;
+  font-weight: 600;
+  color: #8899AA;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 6px 0 2px 0;
+}
+
+/* Agent rows */
+.agents-container {
+  spacing: 2px;
+}
+
+.agent-row {
+  spacing: 6px;
+  padding: 3px 0;
+}
+
+.agent-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: #E8E0D0;
+  min-width: 60px;
+}
+
+.agent-status {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* Status dots */
+.status-dot {
+  min-width: 7px;
+  min-height: 7px;
+  border-radius: 4px;
+}
+
+.status-dot.online {
+  background: #00CC88;
+  box-shadow: 0 0 4px rgba(0, 204, 136, 0.4);
+}
+
+.status-dot.busy {
+  background: #00D4FF;
+  box-shadow: 0 0 4px rgba(0, 212, 255, 0.4);
+}
+
+.status-dot.warning {
+  background: #FF8C00;
+  box-shadow: 0 0 4px rgba(255, 140, 0, 0.4);
+}
+
+.status-dot.offline {
+  background: #FF3355;
+  box-shadow: 0 0 4px rgba(255, 51, 85, 0.4);
+}
+
+/* Status label colors */
+.agent-status.online { color: #00CC88; }
+.agent-status.busy { color: #00D4FF; }
+.agent-status.warning { color: #FF8C00; }
+.agent-status.offline { color: #FF3355; }
+
+/* Telemetry grid */
+.telemetry-grid {
+  spacing: 4px;
+  padding: 2px 0;
+}
+
+.telemetry-cell {
+  background: #0D1B2A;
+  border: 1px solid #1B2D45;
+  border-radius: 2px;
+  padding: 4px 6px;
+  text-align: center;
+}
+
+.telemetry-value {
+  font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+  font-size: 15px;
+  font-weight: 700;
+  color: #00D4FF;
+}
+
+.telemetry-label {
+  font-size: 8px;
+  font-weight: 600;
+  color: #8899AA;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* Comm message */
+.comm-message {
+  font-size: 11px;
+  color: #8899AA;
+  padding: 4px 0;
+  border-left: 2px solid #1B2D45;
+  padding-left: 6px;
+  max-width: 250px;
+}
+
+.comm-message.ergo {
+  border-left-color: #D4A843;
+}
+
+.comm-message.romi {
+  border-left-color: #00D4FF;
+}
+
+.comm-message.proxy {
+  border-left-color: #8899AA;
+}

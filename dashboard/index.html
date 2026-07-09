@@ -3,258 +3,632 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Starship OS — Agent Dashboard</title>
+<title>Starship OS — Bridge Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600&family=JetBrains+Mono:wght@450;500;600&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #1a1a2e;
-    --surface: #16213e;
-    --surface2: #1f2d50;
-    --primary: #4fc3f7;
-    --success: #81c784;
-    --warn: #ffb74d;
-    --error: #e57373;
-    --text: #e0e0e0;
-    --text-dim: #8899aa;
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: 'Ubuntu', -apple-system, system-ui, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    margin: 0;
-    padding: 20px;
-  }
-  .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 24px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid var(--surface2);
-  }
-  .header h1 { font-size: 22px; color: var(--primary); }
-  .header .status-badge { font-size: 13px; padding: 4px 12px; border-radius: 12px; }
-  .badge-ok { background: #1b5e20; color: var(--success); }
-  .badge-warn { background: #e65100; color: var(--warn); }
+:root {
+  --color-bg: #070B14;
+  --color-surface: rgba(14, 22, 40, 0.72);
+  --color-surface-alt: rgba(18, 28, 48, 0.6);
+  --color-glass: rgba(14, 22, 40, 0.55);
+  --color-glass-edge: rgba(60, 80, 120, 0.15);
+  --color-glass-edge-hover: rgba(100, 140, 200, 0.2);
+  --color-border: rgba(60, 80, 120, 0.12);
+  --color-border-light: rgba(100, 140, 200, 0.15);
+  --color-primary: #7BC8E4;
+  --color-primary-dim: rgba(123, 200, 228, 0.4);
+  --color-accent: #C4A97D;
+  --color-accent-dim: rgba(196, 169, 125, 0.3);
+  --color-text: #E4DDD0;
+  --color-text-dim: #8A9BB0;
+  --color-text-muted: #5A6A80;
+  --color-success: #7BC8A4;
+  --color-warning: #D4A060;
+  --color-alert: #D46060;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --transition: 200ms cubic-bezier(0.25, 0.1, 0.25, 1);
+}
 
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 16px;
-    margin-bottom: 20px;
-  }
-  .card {
-    background: var(--surface);
-    border-radius: 12px;
-    padding: 16px;
-    border: 1px solid var(--surface2);
-  }
-  .card h2 { font-size: 14px; color: var(--text-dim); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
-  .agent-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--surface2);
-    cursor: pointer;
-  }
-  .agent-row:last-child { border-bottom: none; }
-  .agent-name { font-weight: 500; }
-  .agent-status { font-size: 12px; padding: 2px 8px; border-radius: 8px; }
-  .status-online { background: #1b5e20; color: var(--success); }
-  .status-processing { background: #e65100; color: var(--warn); }
-  .status-offline { background: #b71c1c; color: var(--error); }
+body {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-weight: 400;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 
-  .telemetry-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
-  .metric { text-align: center; padding: 8px; background: var(--surface2); border-radius: 8px; }
-  .metric .value { font-size: 22px; font-weight: 700; color: var(--primary); }
-  .metric .label { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+/* ─── Subtle ambient background ─── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 40% at 20% 30%, rgba(123, 200, 228, 0.035) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 35% at 80% 70%, rgba(196, 169, 125, 0.025) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
 
-  .chat-box {
-    display: flex;
-    flex-direction: column;
-    height: 400px;
-  }
-  .chat-messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 8px;
-    background: var(--bg);
-    border-radius: 8px;
-    margin-bottom: 8px;
-    font-size: 13px;
-  }
-  .msg { margin-bottom: 6px; padding: 4px 8px; border-radius: 6px; }
-  .msg .sender { font-weight: 600; color: var(--primary); }
-  .msg .time { font-size: 10px; color: var(--text-dim); margin-left: 8px; }
-  .chat-input-row {
-    display: flex;
-    gap: 8px;
-  }
-  .chat-input-row select, .chat-input-row input {
-    background: var(--surface2);
-    border: 1px solid #334;
-    color: var(--text);
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 13px;
-  }
-  .chat-input-row input { flex: 1; }
-  .chat-input-row button {
-    background: var(--primary);
-    color: #111;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 600;
-  }
-  .chat-input-row button:hover { background: #81d4fa; }
+/* ─── Status Bar ─── */
+.status-bar {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 22px;
+  background: var(--color-glass);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border-bottom: 0.5px solid var(--color-glass-edge);
+  font-size: 13px;
+}
+.ship-name {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-primary);
+  letter-spacing: 0.04em;
+}
+.ship-name span { font-weight: 400; color: var(--color-text-dim); }
+.ship-status {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-dim);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ship-status .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  transition: background var(--transition);
+}
+.ship-status .dot.nominal { background: var(--color-success); }
+.ship-status .dot.degraded { background: var(--color-warning); }
+.ship-status .dot.critical { background: var(--color-alert); }
+.ship-time {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12px;
+  font-weight: 450;
+  color: var(--color-text-muted);
+}
 
-  .log-viewer {
-    height: 200px;
-    overflow-y: auto;
-    background: var(--bg);
-    border-radius: 8px;
-    padding: 8px;
-    font-family: monospace;
-    font-size: 11px;
-    white-space: pre-wrap;
-  }
-  .log-line { color: var(--text-dim); }
-  .log-line.error { color: var(--error); }
+/* ─── Bridge Grid ─── */
+.bridge {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 220px 1fr 240px;
+  gap: 10px;
+  padding: 10px;
+  max-width: 1440px;
+  margin: 0 auto;
+  min-height: calc(100vh - 56px);
+  align-content: start;
+}
+@media (max-width: 1100px) { .bridge { grid-template-columns: 220px 1fr; } }
+@media (max-width: 700px) { .bridge { grid-template-columns: 1fr; } }
 
-  @media (max-width: 600px) {
-    body { padding: 10px; }
-    .grid { grid-template-columns: 1fr; }
-  }
+/* ─── Glass Panel ─── */
+.glass {
+  background: var(--color-glass);
+  backdrop-filter: blur(16px) saturate(1.3);
+  -webkit-backdrop-filter: blur(16px) saturate(1.3);
+  border: 0.5px solid var(--color-glass-edge);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  position: relative;
+  transition: border-color var(--transition), background var(--transition);
+}
+.glass:hover { border-color: var(--color-glass-edge-hover); background: var(--color-surface-alt); }
+.glass h2 {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--color-text-muted);
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 0.5px solid var(--color-border);
+}
+
+/* ─── Left Console ─── */
+.console-left { display: flex; flex-direction: column; gap: 10px; }
+
+/* ─── Agents ─── */
+.agent-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.agent-row:hover { background: rgba(123, 200, 228, 0.06); }
+.agent-row .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.agent-row .dot.online { background: var(--color-success); }
+.agent-row .dot.busy { background: var(--color-primary); }
+.agent-row .dot.warning { background: var(--color-warning); }
+.agent-row .dot.offline { background: var(--color-alert); }
+.agent-row .name {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text);
+}
+.agent-row .status {
+  font-size: 9px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.agent-row .status.online { color: var(--color-success); }
+.agent-row .status.busy { color: var(--color-primary); }
+.agent-row .status.warning { color: var(--color-warning); }
+.agent-row .status.offline { color: var(--color-alert); }
+
+/* ─── Logs ─── */
+.log-controls {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.log-controls select {
+  flex: 1;
+  background: rgba(0,0,0,0.25);
+  border: 0.5px solid var(--color-glass-edge);
+  color: var(--color-text);
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color var(--transition);
+}
+.log-controls select:focus { border-color: var(--color-primary-dim); }
+.log-viewer {
+  height: 160px;
+  overflow-y: auto;
+  background: rgba(0,0,0,0.25);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10.5px;
+  font-weight: 450;
+  white-space: pre-wrap;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+.log-viewer .error { color: var(--color-alert); }
+
+/* ─── Primary: Chat ─── */
+.console-primary {
+  display: flex;
+  flex-direction: column;
+  min-height: 480px;
+}
+.chat-viewport { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.comm-message {
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  border-left: 2px solid var(--color-glass-edge);
+  animation: msgIn 250ms ease-out both;
+}
+@keyframes msgIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.comm-message.ergo { border-left-color: var(--color-accent); }
+.comm-message.romi { border-left-color: var(--color-primary); }
+.comm-message.proxy { border-left-color: var(--color-text-muted); }
+.comm-header {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.comm-header .rank { font-size: 11px; }
+.comm-header .time {
+  margin-left: auto;
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 450;
+  font-size: 9px;
+  color: var(--color-text-muted);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.comm-body { font-size: 13px; line-height: 1.55; color: var(--color-text); font-weight: 400; }
+
+.chat-input-row {
+  display: flex;
+  gap: 6px;
+}
+.chat-input-row select,
+.chat-input-row input {
+  background: rgba(0,0,0,0.25);
+  border: 0.5px solid var(--color-glass-edge);
+  color: var(--color-text);
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color var(--transition);
+}
+.chat-input-row select:focus,
+.chat-input-row input:focus {
+  border-color: var(--color-primary-dim);
+}
+.chat-input-row input { flex: 1; }
+
+/* ─── Buttons ─── */
+.btn {
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 9px 18px;
+  border-radius: var(--radius-sm);
+  border: 0.5px solid var(--color-glass-edge);
+  background: var(--color-glass);
+  backdrop-filter: blur(8px);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition), color var(--transition);
+  -webkit-font-smoothing: antialiased;
+}
+.btn:hover {
+  background: rgba(123, 200, 228, 0.08);
+  border-color: var(--color-primary-dim);
+  color: var(--color-primary);
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary {
+  background: rgba(123, 200, 228, 0.12);
+  border-color: var(--color-primary-dim);
+  color: var(--color-primary);
+}
+.btn-primary:hover {
+  background: rgba(123, 200, 228, 0.2);
+  color: #fff;
+}
+
+/* ─── Right Console ─── */
+.console-right { display: flex; flex-direction: column; gap: 10px; }
+
+/* ─── Telemetry Grid ─── */
+.telemetry-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.tele-cell {
+  background: rgba(0,0,0,0.2);
+  border: 0.5px solid var(--color-glass-edge);
+  border-radius: var(--radius-sm);
+  padding: 12px 10px;
+  text-align: center;
+  transition: border-color var(--transition);
+}
+.tele-cell:hover { border-color: var(--color-glass-edge-hover); }
+.tele-cell .label {
+  font-size: 8px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-text-muted);
+  margin-bottom: 6px;
+}
+.tele-cell .value {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-primary);
+}
+.tele-cell .value.success { color: var(--color-success); }
+.tele-cell .value.warning { color: var(--color-warning); }
+.tele-cell .value.alert { color: var(--color-alert); }
+.tele-cell.span-2 { grid-column: span 2; }
+
+/* ─── Ring Gauges ─── */
+.ring-cell { padding: 4px; }
+.ring-wrap { width: 56px; height: 56px; margin: 0 auto 6px; position: relative; }
+.ring-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring-bg { fill: none; stroke: rgba(60, 80, 120, 0.15); stroke-width: 2; }
+.ring-fill {
+  fill: none;
+  stroke: var(--color-primary);
+  stroke-width: 2;
+  stroke-linecap: round;
+  transition: stroke-dasharray 400ms ease, stroke 400ms ease;
+}
+.ring-text {
+  fill: var(--color-primary);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 7px;
+  font-weight: 500;
+  text-anchor: middle;
+  dominant-baseline: central;
+  transform: rotate(90deg);
+  transform-origin: 18px 18px;
+  transition: fill 400ms ease;
+}
+
+/* ─── Action Rail ─── */
+.action-rail {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  gap: 6px;
+  padding: 10px 22px;
+  background: var(--color-glass);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border-top: 0.5px solid var(--color-glass-edge);
+}
+.action-rail .btn { font-size: 10px; padding: 7px 14px; }
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(60, 80, 120, 0.2); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(60, 80, 120, 0.35); }
+
+/* ─── Mobile ─── */
+@media (max-width: 700px) {
+  .status-bar { padding: 12px 16px; flex-wrap: wrap; gap: 4px; }
+  .bridge { padding: 6px; gap: 6px; }
+  .glass { padding: 12px; }
+  .action-rail { padding: 8px 16px; overflow-x: auto; }
+}
 </style>
 </head>
 <body>
-<div class="header">
-  <h1>⭐ Starship OS</h1>
-  <span id="healthBadge" class="status-badge badge-ok">● All systems nominal</span>
+
+<div class="status-bar">
+  <span class="ship-name">Starship OS <span>Bridge</span></span>
+  <span class="ship-status"><span id="healthDot" class="dot nominal"></span><span id="healthText">All systems nominal</span></span>
+  <span class="ship-time" id="shipTime">--:--:--</span>
 </div>
 
-<div class="grid">
-  <div class="card">
-    <h2>🤖 Agents</h2>
-    <div id="agentList"></div>
-  </div>
-
-  <div class="card">
-    <h2>📊 Telemetry</h2>
-    <div class="telemetry-grid" id="telemetryGrid">
-      <div class="metric"><div class="value" id="cpuVal">--</div><div class="label">CPU %</div></div>
-      <div class="metric"><div class="value" id="memVal">--</div><div class="label">RAM</div></div>
-      <div class="metric"><div class="value" id="diskVal">--</div><div class="label">DISK</div></div>
-      <div class="metric"><div class="value" id="netVal">--</div><div class="label">NET</div></div>
+<div class="bridge">
+  <!-- Left: Agents + Logs -->
+  <div class="console-left">
+    <div class="glass">
+      <h2>Agents</h2>
+      <div id="agentList"></div>
+    </div>
+    <div class="glass">
+      <h2>System Log</h2>
+      <div class="log-controls">
+        <select id="logAgent">
+          <option value="proxy">Proxy</option>
+          <option value="romi">Romi</option>
+          <option value="ergo">Ergo</option>
+        </select>
+        <button class="btn" onclick="loadLogs()">⟳</button>
+      </div>
+      <div class="log-viewer" id="logViewer">Select agent</div>
     </div>
   </div>
-</div>
 
-<div class="grid">
-  <div class="card" style="grid-column: span 2;">
-    <h2>💬 Agent Chat</h2>
-    <div class="chat-box">
-      <div class="chat-messages" id="chatMessages"></div>
+  <!-- Center: Chat -->
+  <div class="glass console-primary">
+    <h2>Command Channel</h2>
+    <div class="chat-viewport">
+      <div class="chat-messages" id="chatMessages">
+        <div class="comm-message">
+          <div class="comm-header"><span class="rank">⌘</span> Bridge COM</div>
+          <div class="comm-body">Awaiting transmission...</div>
+        </div>
+      </div>
       <div class="chat-input-row">
         <select id="chatAgent">
           <option value="proxy">Proxy</option>
           <option value="romi">Romi</option>
           <option value="ergo">Ergo</option>
         </select>
-        <input type="text" id="chatInput" placeholder="Type a command..." />
-        <button onclick="sendCommand()">Send</button>
+        <input type="text" id="chatInput" placeholder="Transmit command..." />
+        <button class="btn btn-primary" onclick="sendCommand()">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Telemetry + Status -->
+  <div class="console-right">
+    <div class="glass">
+      <h2>Telemetry</h2>
+      <div class="telemetry-grid" id="telemetryGrid">
+        <div class="tele-cell ring-cell">
+          <div class="ring-wrap">
+            <svg viewBox="0 0 36 36" class="ring-svg">
+              <path class="ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+              <path class="ring-fill" id="cpuGauge" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+              <text x="18" y="20.5" class="ring-text" id="cpuVal">--</text>
+            </svg>
+          </div>
+          <div class="label">CPU</div>
+        </div>
+        <div class="tele-cell ring-cell">
+          <div class="ring-wrap">
+            <svg viewBox="0 0 36 36" class="ring-svg">
+              <path class="ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+              <path class="ring-fill" id="memGauge" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+              <text x="18" y="20.5" class="ring-text" id="memVal">--</text>
+            </svg>
+          </div>
+          <div class="label">RAM</div>
+        </div>
+        <div class="tele-cell ring-cell">
+          <div class="ring-wrap">
+            <svg viewBox="0 0 36 36" class="ring-svg">
+              <path class="ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+              <path class="ring-fill" id="diskGauge" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+              <text x="18" y="20.5" class="ring-text" id="diskVal">--</text>
+            </svg>
+          </div>
+          <div class="label">Disk</div>
+        </div>
+        <div class="tele-cell ring-cell">
+          <div class="ring-wrap">
+            <svg viewBox="0 0 36 36" class="ring-svg">
+              <path class="ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+              <path class="ring-fill" id="netGauge" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+              <text x="18" y="20.5" class="ring-text" id="netVal">--</text>
+            </svg>
+          </div>
+          <div class="label">Net</div>
+        </div>
+      </div>
+    </div>
+    <div class="glass" style="flex:1;">
+      <h2>Ship Status</h2>
+      <div class="telemetry-grid">
+        <div class="tele-cell">
+          <div class="label">Agents Online</div>
+          <div class="value success" id="agentsOnline">0/0</div>
+        </div>
+        <div class="tele-cell">
+          <div class="label">Uptime</div>
+          <div class="value" id="uptimeVal">--</div>
+        </div>
+        <div class="tele-cell span-2">
+          <div class="label">Last Transmission</div>
+          <div class="value" id="lastTransmission" style="font-size:11px;color:var(--color-text-muted);font-weight:450;">--</div>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
-<div class="grid">
-  <div class="card">
-    <h2>📋 Agent Logs</h2>
-    <div style="margin-bottom: 8px;">
-      <select id="logAgent" style="background:var(--surface2);border:1px solid #334;color:var(--text);padding:4px 8px;border-radius:4px;">
-        <option value="proxy">Proxy</option>
-        <option value="romi">Romi</option>
-        <option value="ergo">Ergo</option>
-      </select>
-      <button onclick="loadLogs()" style="background:var(--surface2);border:1px solid #334;color:var(--text);padding:4px 12px;border-radius:4px;cursor:pointer;">Refresh</button>
-    </div>
-    <div class="log-viewer" id="logViewer">Select an agent and click Refresh</div>
-  </div>
+<div class="action-rail">
+  <button class="btn" onclick="sendToAgent('ergo','status report')">Ergo Status</button>
+  <button class="btn" onclick="sendToAgent('romi','system check')">Romi Check</button>
+  <button class="btn" onclick="sendToAgent('proxy','ping')">Proxy Ping</button>
+  <button class="btn" onclick="refresh()">⟳ Refresh</button>
 </div>
 
 <script>
 const STATUS_URL = '/api/status';
 
 async function fetchJSON(url) {
-  try {
-    const r = await fetch(url);
-    return await r.json();
-  } catch { return null; }
+  try { const r = await fetch(url); return await r.json(); }
+  catch { return null; }
 }
+
+function escapeHTML(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 function renderAgents(data) {
   const el = document.getElementById('agentList');
-  if (!data || !data.agents) { el.innerHTML = '<div style="color:var(--text-dim)">No data</div>'; return; }
+  if (!data || !data.agents) { el.innerHTML = '<div style="color:var(--color-text-muted);font-size:12px;">No agent data</div>'; return; }
   el.innerHTML = '';
+  let online = 0, total = 0;
   for (const [name, agent] of Object.entries(data.agents)) {
-    const status = agent.status || 'unknown';
+    total++;
+    const status = agent.status || 'offline';
+    const cls = ['online','complete'].includes(status) ? 'online' : status === 'processing' || status === 'busy' ? 'busy' : status === 'warning' ? 'warning' : 'offline';
+    if (cls === 'online' || status === 'complete') online++;
     const row = document.createElement('div');
     row.className = 'agent-row';
     row.onclick = () => { document.getElementById('chatAgent').value = name; };
-    row.innerHTML = `
-      <span class="agent-name">${name.charAt(0).toUpperCase() + name.slice(1)}</span>
-      <span class="agent-status status-${status}">${status}</span>
-    `;
+    row.innerHTML = `<span class="dot ${cls}"></span><span class="name">${name.charAt(0).toUpperCase() + name.slice(1)}</span><span class="status ${cls}">${status}</span>`;
     el.appendChild(row);
   }
-  // Update online count
-  const online = Object.values(data.agents).filter(a => a.status === 'online').length;
-  const total = Object.keys(data.agents).length;
-  const badge = document.getElementById('healthBadge');
-  if (online === total) {
-    badge.textContent = '● All systems nominal';
-    badge.className = 'status-badge badge-ok';
-  } else if (online > 0) {
-    badge.textContent = `● ${online}/${total} agents online`;
-    badge.className = 'status-badge badge-warn';
-  } else {
-    badge.textContent = '● All agents offline';
-    badge.className = 'status-badge badge-ok';
-    badge.style.color = 'var(--error)';
+  const dot = document.getElementById('healthDot');
+  const text = document.getElementById('healthText');
+  if (online === total) { dot.className = 'dot nominal'; text.textContent = 'All systems nominal'; }
+  else if (online > 0) { dot.className = 'dot degraded'; text.textContent = online + '/' + total + ' agents online'; }
+  else { dot.className = 'dot critical'; text.textContent = 'All agents offline'; }
+  document.getElementById('agentsOnline').textContent = online + '/' + total;
+}
+
+function gaugeColor(pct) {
+  if (pct > 90) return '#D46060';
+  if (pct > 75) return '#D4A060';
+  return '#7BC8E4';
+}
+
+function updateGauge(id, pct, val) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const circ = 100;
+  const dash = Math.max(0, Math.min(100, (pct / 100) * circ));
+  el.setAttribute('stroke-dasharray', dash + ' ' + (circ - dash));
+  const color = gaugeColor(pct);
+  el.setAttribute('stroke', color);
+  const txt = document.getElementById(id.replace('Gauge', 'Val'));
+  if (txt) {
+    txt.setAttribute('fill', color);
+    txt.textContent = val;
   }
 }
 
 function renderTelemetry(data) {
   if (!data || !data.telemetry || !data.telemetry.full) return;
   const t = data.telemetry.full;
-  document.getElementById('cpuVal').textContent = (t.cpu || 0).toFixed(1) + '%';
+  const cpu = t.cpu || 0;
+  updateGauge('cpuGauge', cpu, cpu.toFixed(1) + '%');
   const mu = Math.round((t.memory_used || 0) / 1073741824);
   const mt = Math.round((t.memory_total || 0) / 1073741824);
-  document.getElementById('memVal').textContent = mu + '/' + mt + 'GB';
+  updateGauge('memGauge', mt > 0 ? (mu / mt) * 100 : 0, mu + '/' + mt + 'G');
   const du = Math.round((t.disk_used || 0) / 1073741824 / 1024);
   const dt = Math.round((t.disk_total || 0) / 1073741824 / 1024);
-  document.getElementById('diskVal').textContent = du + '/' + dt + 'GB';
+  updateGauge('diskGauge', dt > 0 ? (du / dt) * 100 : 0, du + '/' + dt + 'T');
+  const rx = t.rx_bytes || 0;
+  const tx = t.tx_bytes || 0;
+  updateGauge('netGauge', Math.min(rx / 1048576 * 100, 100), (rx/1024).toFixed(0) + '/' + (tx/1024).toFixed(0) + 'K');
+}
 
-  // Update recent messages
-  if (data.messages && data.messages.length > 0) {
-    const chatEl = document.getElementById('chatMessages');
-    const latest = data.messages[0];
-    if (latest) {
-      const div = document.createElement('div');
-      div.className = 'msg';
-      div.innerHTML = `<span class="sender">${(latest.agent || '?').toUpperCase()}</span> ${latest.response || ''}`;
-      chatEl.appendChild(div);
-      chatEl.scrollTop = chatEl.scrollHeight;
-    }
+function renderMessages(data) {
+  if (!data || !data.messages || data.messages.length === 0) return;
+  const chatEl = document.getElementById('chatMessages');
+  chatEl.innerHTML = '';
+  const msgs = data.messages.slice(-30).reverse();
+  for (const msg of msgs) {
+    const agent = msg.agent || 'system';
+    const cls = ['ergo','romi','proxy'].includes(agent) ? agent : 'proxy';
+    const ts = msg.timestamp ? new Date(msg.timestamp + 'Z').toLocaleTimeString() : '';
+    const body = (msg.response || msg.command || '').substring(0, 400);
+    const div = document.createElement('div');
+    div.className = 'comm-message ' + cls;
+    div.innerHTML = '<div class="comm-header"><span class="rank">' +
+      (agent === 'ergo' ? '◆' : agent === 'romi' ? '◇' : '○') +
+      '</span> ' + agent.toUpperCase() +
+      '<span class="time">' + ts + '</span></div>' +
+      '<div class="comm-body">' + escapeHTML(body) + '</div>';
+    chatEl.appendChild(div);
+  }
+  chatEl.scrollTop = chatEl.scrollHeight;
+  if (data.messages[0]) {
+    const el = document.getElementById('lastTransmission');
+    const ts = new Date(data.messages[0].timestamp + 'Z').toLocaleString();
+    if (el.textContent !== ts) { el.textContent = ts; }
   }
 }
 
@@ -262,6 +636,13 @@ async function refresh() {
   const data = await fetchJSON(STATUS_URL);
   renderAgents(data);
   renderTelemetry(data);
+  renderMessages(data);
+}
+
+function sendToAgent(agent, cmd) {
+  document.getElementById('chatAgent').value = agent;
+  document.getElementById('chatInput').value = cmd;
+  sendCommand();
 }
 
 async function sendCommand() {
@@ -269,10 +650,11 @@ async function sendCommand() {
   const input = document.getElementById('chatInput');
   const cmd = input.value.trim();
   if (!cmd) return;
-
   const chatEl = document.getElementById('chatMessages');
-  chatEl.innerHTML += `<div class="msg"><span class="sender">YOU → ${agent.toUpperCase()}</span> ${cmd}</div>`;
-
+  const div = document.createElement('div');
+  div.className = 'comm-message';
+  div.innerHTML = '<div class="comm-header"><span class="rank">▸</span> YOU → ' + agent.toUpperCase() + '</div><div class="comm-body">' + escapeHTML(cmd) + '</div>';
+  chatEl.appendChild(div);
   try {
     const r = await fetch('/api/send', {
       method: 'POST',
@@ -281,11 +663,19 @@ async function sendCommand() {
     });
     const result = await r.json();
     const resp = result.response || result.error || 'No response';
-    chatEl.innerHTML += `<div class="msg"><span class="sender">${agent.toUpperCase()}</span> ${resp}</div>`;
+    const cls = ['ergo','romi','proxy'].includes(agent) ? agent : 'proxy';
+    const respDiv = document.createElement('div');
+    respDiv.className = 'comm-message ' + cls;
+    respDiv.innerHTML = '<div class="comm-header"><span class="rank">' +
+      (agent === 'ergo' ? '◆' : agent === 'romi' ? '◇' : '○') +
+      '</span> ' + agent.toUpperCase() + '</div><div class="comm-body">' + escapeHTML(resp) + '</div>';
+    chatEl.appendChild(respDiv);
   } catch (e) {
-    chatEl.innerHTML += `<div class="msg"><span class="sender" style="color:var(--error)">ERROR</span> ${e.message}</div>`;
+    const errDiv = document.createElement('div');
+    errDiv.className = 'comm-message';
+    errDiv.innerHTML = '<div class="comm-header"><span class="rank" style="color:var(--color-alert)">✕</span> ERROR</div><div class="comm-body" style="color:var(--color-alert)">' + e.message + '</div>';
+    chatEl.appendChild(errDiv);
   }
-
   chatEl.scrollTop = chatEl.scrollHeight;
   input.value = '';
 }
@@ -294,11 +684,11 @@ async function loadLogs() {
   const agent = document.getElementById('logAgent').value;
   const viewer = document.getElementById('logViewer');
   try {
-    const r = await fetch(`/api/logs?agent=${agent}`);
+    const r = await fetch('/api/logs?agent=' + agent);
     const data = await r.json();
-    viewer.innerHTML = data.lines.map(l => `<div class="log-line${l.toLowerCase().includes('error') ? ' error' : ''}">${l}</div>`).join('');
+    viewer.innerHTML = data.lines.map(l => '<div' + (l.toLowerCase().includes('error') ? ' class="error"' : '') + '>' + escapeHTML(l) + '</div>').join('');
   } catch {
-    viewer.innerHTML = '<div class="log-line error">Failed to load logs</div>';
+    viewer.innerHTML = '<div class="error">Failed to load logs</div>';
   }
 }
 
@@ -306,10 +696,16 @@ document.getElementById('chatInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') sendCommand();
 });
 
+function updateClock() {
+  document.getElementById('shipTime').textContent = new Date().toLocaleTimeString('en-GB');
+}
+
 refresh();
 setInterval(refresh, 3000);
 loadLogs();
 setInterval(loadLogs, 15000);
+updateClock();
+setInterval(updateClock, 1000);
 </script>
 </body>
 </html>

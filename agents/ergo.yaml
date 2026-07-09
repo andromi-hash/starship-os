@@ -4,7 +4,7 @@
 
 name: ergo
 role: automation_agent
-model: jeffgreen311/eve-v2-unleashed-qwen3.5-8b-liberated-4k-4b-merged
+model: ergo
 provider: ollama
 
 capabilities:

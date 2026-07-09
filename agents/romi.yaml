@@ -4,7 +4,7 @@
 
 name: romi
 role: client_agent
-model: qwen2.5:7b
+model: romi
 provider: ollama
 
 capabilities:

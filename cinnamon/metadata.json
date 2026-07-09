@@ -1,0 +1,8 @@
+{
+ "uuid": "starship-os@starship-os",
+ "name": "Starship OS Bridge Console",
+ "description": "Starship bridge status display — agent readiness and system telemetry",
+ "icon": "computer",
+ "prevent-decorations": true,
+ "max-instances": 1
+}
