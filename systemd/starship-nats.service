@@ -1,0 +1,15 @@
+[Unit]
+Description=Starship OS NATS Message Bus
+Documentation=https://nats.io
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/nats-server -c /home/tech/starship-os/nats/server.conf
+Restart=always
+RestartSec=3
+User=tech
+Group=tech
+
+[Install]
+WantedBy=multi-user.target

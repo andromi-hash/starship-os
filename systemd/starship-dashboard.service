@@ -1,0 +1,17 @@
+[Unit]
+Description=Starship OS Web Dashboard
+Documentation=https://github.com/andromi-hash/starship-os
+After=starship-nats.service starship-agents.service
+
+[Service]
+Type=simple
+ExecStart=/home/tech/.hermes/hermes-agent/venv/bin/python3 /home/tech/starship-os/dashboard/server.py
+Restart=always
+RestartSec=3
+User=tech
+Group=tech
+Environment=NATS_URL=nats://127.0.0.1:4222
+Environment=DASHBOARD_PORT=8899
+
+[Install]
+WantedBy=multi-user.target

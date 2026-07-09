@@ -1,0 +1,17 @@
+[Unit]
+Description=Starship OS Agent Daemons (Proxy, Romi, Ergo)
+Documentation=https://github.com/andromi-hash/starship-os
+After=starship-nats.service
+BindsTo=starship-nats.service
+
+[Service]
+Type=simple
+ExecStart=/home/tech/.hermes/hermes-agent/venv/bin/python3 /home/tech/starship-os/agents/agent_daemon.py
+Restart=always
+RestartSec=5
+User=tech
+Group=tech
+Environment=NATS_URL=nats://127.0.0.1:4222
+
+[Install]
+WantedBy=multi-user.target
