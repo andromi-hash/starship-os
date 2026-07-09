@@ -1,0 +1,44 @@
+agents:
+  proxy:
+    model: qwen2.5:7b
+    nats_url: nats://127.0.0.1:4222
+    nats_token: ""
+    enabled: true
+    skills:
+      - system-health
+    schedule: []
+
+  romi:
+    model: qwen2.5:7b
+    nats_url: nats://127.0.0.1:4222
+    nats_token: ""
+    enabled: true
+    skills:
+      - code-review
+    schedule: []
+
+  ergo:
+    model: jeffgreen311/eve-v2-unleashed-qwen3.5-8b-liberated-4k-4b-merged
+    nats_url: nats://127.0.0.1:4222
+    nats_token: ""
+    enabled: true
+    skills:
+      - security-audit
+      - deploy
+    schedule:
+      - name: nightly-health
+        cron: "0 2 * * *"
+        workflow: system-health
+      - name: weekly-audit
+        cron: "0 6 * * 1"
+        workflow: security-audit
+
+nats:
+  url: nats://127.0.0.1:4222
+  jetstream: true
+  auth_token: ""
+  auth_enabled: false
+
+dashboard:
+  port: 8899
+  host: 0.0.0.0
