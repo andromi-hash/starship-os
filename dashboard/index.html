@@ -507,7 +507,7 @@ body::before {
         </div>
       </div>
     </div>
-    <div class="glass" style="flex:1;">
+    <div class="glass">
       <h2>Ship Status</h2>
       <div class="telemetry-grid">
         <div class="tele-cell">
@@ -524,6 +524,12 @@ body::before {
         </div>
       </div>
     </div>
+    <div class="glass">
+      <h2>Message History</h2>
+      <div id="historyList" style="font-size:11px;color:var(--color-text-muted);max-height:160px;overflow-y:auto;">
+        <div style="padding:6px 0;">Loading...</div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -531,6 +537,8 @@ body::before {
   <button class="btn" onclick="sendToAgent('ergo','status report')">Ergo Status</button>
   <button class="btn" onclick="sendToAgent('romi','system check')">Romi Check</button>
   <button class="btn" onclick="sendToAgent('proxy','ping')">Proxy Ping</button>
+  <button class="btn" onclick="runWorkflow('security-audit')">Security Audit</button>
+  <button class="btn" onclick="runWorkflow('system-health')">Health Check</button>
   <button class="btn" onclick="refresh()">⟳ Refresh</button>
 </div>
 
@@ -700,10 +708,58 @@ function updateClock() {
   document.getElementById('shipTime').textContent = new Date().toLocaleTimeString('en-GB');
 }
 
+async function runWorkflow(name) {
+  const chatEl = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'comm-message';
+  div.innerHTML = '<div class="comm-header"><span class="rank">⟐</span> SYSTEM</div><div class="comm-body">Triggering workflow: ' + name + '...</div>';
+  chatEl.appendChild(div);
+  try {
+    const r = await fetch('/api/workflow', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ workflow: name, payload: {} }),
+    });
+    const result = await r.json();
+    const respDiv = document.createElement('div');
+    respDiv.className = 'comm-message';
+    respDiv.innerHTML = '<div class="comm-header"><span class="rank" style="color:var(--color-success)">✓</span> WORKFLOW</div><div class="comm-body">' + escapeHTML(result.status || JSON.stringify(result)) + '</div>';
+    chatEl.appendChild(respDiv);
+  } catch (e) {
+    const errDiv = document.createElement('div');
+    errDiv.className = 'comm-message';
+    errDiv.innerHTML = '<div class="comm-header"><span class="rank" style="color:var(--color-alert)">✕</span> WORKFLOW ERROR</div><div class="comm-body" style="color:var(--color-alert)">' + e.message + '</div>';
+    chatEl.appendChild(errDiv);
+  }
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+async function loadHistory() {
+  const el = document.getElementById('historyList');
+  try {
+    const r = await fetch('/api/history?limit=20');
+    const data = await r.json();
+    if (!data.messages || data.messages.length === 0) {
+      el.innerHTML = '<div style="padding:6px 0;color:var(--color-text-muted);">No history yet</div>';
+      return;
+    }
+    el.innerHTML = data.messages.slice(-10).map(m => {
+      const ts = m.timestamp ? new Date(m.timestamp).toLocaleTimeString() : '';
+      const sub = m.subject || '';
+      const preview = JSON.stringify(m.data || '').substring(0, 60);
+      return '<div style="padding:4px 0;border-bottom:0.5px solid var(--color-border);font-size:10px;display:flex;gap:6px;"><span style="color:var(--color-text-muted);white-space:nowrap;">' + ts + '</span><span style="color:var(--color-primary-dim);">' + sub.split('.').slice(-2).join('.') + '</span><span style="color:var(--color-text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHTML(preview) + '</span></div>';
+    }).join('');
+  } catch {
+    el.innerHTML = '<div style="padding:6px 0;color:var(--color-text-muted);">Failed to load history</div>';
+  }
+}
+
 refresh();
 setInterval(refresh, 3000);
 loadLogs();
 setInterval(loadLogs, 15000);
+loadHistory();
+setInterval(loadHistory, 10000);
 updateClock();
 setInterval(updateClock, 1000);
 </script>

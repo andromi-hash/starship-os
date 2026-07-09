@@ -62,11 +62,11 @@ async def handle_send(request):
         }).encode())
 
         try:
-            msg = await sub.next_msg(timeout=30)
+            msg = await sub.next_msg(timeout=120)
             result = json.loads(msg.data.decode())
             return web.json_response(result)
         except asyncio.TimeoutError:
-            return web.json_response({"error": "timeout", "response": "Agent did not respond in 30s"})
+            return web.json_response({"error": "timeout", "response": "Agent did not respond in 120s"})
     except Exception as e:
         return web.json_response({"error": str(e)})
 
