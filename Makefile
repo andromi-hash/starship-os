@@ -3,7 +3,7 @@ CARGO := $(HOME)/.cargo/bin/cargo
 GO := /tmp/go/bin/go
 export PATH := /tmp/go/bin:$(HOME)/.cargo/bin:$(HOME)/.local/bin:$(PATH)
 
-.PHONY: all build build-agent cli install uninstall run dev stop clean status
+.PHONY: all build build-agent cli install uninstall run dev stop clean status profile sandbox
 
 all: build build-agent
 
@@ -69,6 +69,14 @@ status:
 	@echo "=== Ollama Models ==="
 	@$(HOME)/.local/bin/ollama list 2>/dev/null || ollama list 2>/dev/null || echo "  (ollama not available)"
 	@echo ""
+
+# ─── Hardware profile ───────────────────────────────────────────────
+profile:
+	@bash scripts/select-profile.sh $(PROFILE)
+
+# ─── C11 sandbox spike (ADR 0001) ───────────────────────────────────
+sandbox:
+	$(MAKE) -C src/c/sandbox_spike all test
 
 # ─── Clean ──────────────────────────────────────────────────────────
 clean:

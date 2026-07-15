@@ -1,0 +1,25 @@
+#cloud-config
+# Starship OS autoinstall — edge profile
+autoinstall:
+  version: 1
+  locale: en_US.UTF-8
+  keyboard:
+    layout: us
+  identity:
+    hostname: starship-edge
+    username: starship
+    password: "REPLACE_WITH_MKPASSWD_HASH"
+  ssh:
+    install-server: true
+    allow-pw: true
+  storage:
+    layout:
+      name: direct
+  packages:
+    - python3
+    - python3-venv
+    - curl
+    - git
+    - ca-certificates
+  late-commands:
+    - curtin in-target --target=/target -- bash -c 'mkdir -p /opt/starship /etc/starship /var/lib/starship /var/log/starship && ln -sfn /opt/starship /opt/agnetic && echo "STARSHIP_PROFILE=edge" > /etc/starship/firstboot.env && echo "profile: edge" > /etc/starship/profile.yaml'

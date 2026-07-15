@@ -26,4 +26,4 @@
 - [x] Full `starship` branding rename in remaining code/docs (product strings)
 - [x] NATS subject dual-publish `starship.*` (primary) / `agnetic.*` (legacy)
 - [x] Vendor OpenCode + oh-my-opencode-slim pins (1.18.2 / 2.2.2)
-- [ ] Archive notice PR on agnetic-os README
+- [x] Archive notice PR on agnetic-os README (merged)

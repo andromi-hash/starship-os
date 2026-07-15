@@ -32,26 +32,43 @@ elif lspci 2>/dev/null | grep -qi 'vga.*intel'; then
     HAS_GPU=true
 fi
 
-# ── Auto-Configure Based on Hardware ─────────────────────────────────
+# ── Auto-Configure Based on Hardware (profiles: edge|server|ops) ─────
 header "Auto-Configuration"
-if [ "$HAS_GPU" = true ] && [ "${GPU_MEM:-0}" -ge 4096 ]; then
-    MODEL="qwen2.5:7b"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+if [[ -x "$REPO_DIR/scripts/select-profile.sh" ]]; then
+    bash "$REPO_DIR/scripts/select-profile.sh" ${STARSHIP_PROFILE:-} || true
+fi
+PROFILE="${STARSHIP_PROFILE:-}"
+if [[ -z "$PROFILE" ]]; then
+    if [[ -f /etc/starship/profile.yaml ]]; then
+        PROFILE=$(awk '/^profile:/{print $2; exit}' /etc/starship/profile.yaml)
+    else
+        PROFILE=server
+    fi
+fi
+case "$PROFILE" in
+  ops)
+    MODEL="Eve-V2-Unleashed"
     EMBED_MODEL="nomic-embed-text"
     CONTEXT_LENGTH="32768"
-    log "GPU detected with >=4GB VRAM — using 7B model with full GPU offload"
-elif [ "$TOTAL_RAM" -ge 8192 ]; then
-    MODEL="qwen2.5:3b"
-    EMBED_MODEL="nomic-embed-text"
-    CONTEXT_LENGTH="16384"
-    log "No GPU or <4GB VRAM — using 3B model for CPU inference"
-    warn "For best performance, consider a GPU with 6GB+ VRAM"
-else
-    MODEL="qwen2.5:1.5b"
+    log "Profile ops — Eve-V2 + full mesh (num_ctx=$CONTEXT_LENGTH)"
+    ;;
+  edge)
+    MODEL="granite4.1-3b"
     EMBED_MODEL="nomic-embed-text"
     CONTEXT_LENGTH="8192"
-    log "Low-resource mode — using 1.5B model"
-    warn "Recommend: 8GB+ RAM for comfortable usage"
-fi
+    log "Profile edge — small models (num_ctx=$CONTEXT_LENGTH)"
+    ;;
+  *)
+    PROFILE=server
+    MODEL="Eve-V2-Unleashed"
+    EMBED_MODEL="nomic-embed-text"
+    CONTEXT_LENGTH="16384"
+    log "Profile server — Eve-V2 default (num_ctx=$CONTEXT_LENGTH)"
+    ;;
+esac
+echo "  Install profile: $PROFILE"
 
 # ── Install System Dependencies ──────────────────────────────────────
 header "System Dependencies"
@@ -83,23 +100,30 @@ fi
 # ── Install Python Dependencies ──────────────────────────────────────
 header "Python Dependencies"
 log "Creating virtual environment..."
-python3 -m venv /opt/agnetic/.venv 2>/dev/null || true
-source /opt/agnetic/.venv/bin/activate 2>/dev/null || true
-pip install -q httpx nats-py lancedb pyarrow numpy aiohttp 2>/dev/null || true
+sudo mkdir -p /opt/starship /var/lib/starship /var/log/starship /etc/starship
+sudo ln -sfn /opt/starship /opt/agnetic 2>/dev/null || true
+sudo ln -sfn /etc/starship /etc/agnetic 2>/dev/null || true
+python3 -m venv /opt/starship/venv 2>/dev/null || true
+source /opt/starship/venv/bin/activate 2>/dev/null || true
+pip install -q httpx nats-py lancedb pyarrow numpy aiohttp PyYAML 2>/dev/null || true
 pip install -q anthropic openai 2>/dev/null || true
 
 # ── Pull Models ──────────────────────────────────────────────────────
 header "AI Models"
-log "Pulling ${MODEL}..."
-ollama pull "${MODEL}" 2>&1 | tail -1
-log "Pulling ${EMBED_MODEL}..."
-ollama pull "${EMBED_MODEL}" 2>&1 | tail -1
+if [[ -x "$REPO_DIR/scripts/install-models.sh" ]]; then
+    bash "$REPO_DIR/scripts/install-models.sh" "$PROFILE" || true
+else
+    log "Pulling ${MODEL}..."
+    ollama pull "${MODEL}" 2>&1 | tail -1 || true
+    log "Pulling ${EMBED_MODEL}..."
+    ollama pull "${EMBED_MODEL}" 2>&1 | tail -1 || true
+fi
 
 # ── Create System Users & Directories ────────────────────────────────
 header "System Setup"
-sudo mkdir -p /opt/agnetic /var/lib/agnetic /var/log/agnetic /etc/agnetic
-sudo chmod 755 /opt/agnetic /var/lib/agnetic /var/log/agnetic
-log "Directories created"
+sudo mkdir -p /opt/starship /var/lib/starship /var/log/starship /etc/starship
+sudo chmod 755 /opt/starship /var/lib/starship /var/log/starship
+log "Directories created (/opt/starship)"
 
 # ── Register Agnetic as a Systemd Service ───────────────────────────
 header "System Service"
@@ -178,21 +202,21 @@ fi
 header "Install Complete"
 echo ""
 echo "  ${CYAN}╔══════════════════════════════════════════╗${NC}"
-echo "  ${CYAN}║       ${GREEN}AGNETIC OS${NC} — Your Agent Mesh     ${CYAN}║${NC}"
 echo "  ${CYAN}║       ${BLUE}Starship OS${NC} — Warm. Safe. Fast.   ${CYAN}║${NC}"
+echo "  ${CYAN}║       profile: ${GREEN}${PROFILE}${NC}                      ${CYAN}║${NC}"
 echo "  ${CYAN}╚══════════════════════════════════════════╝${NC}"
 echo ""
 echo "  Dashboard:  http://$(hostname -I 2>/dev/null | awk '{print $1}'):8788"
 echo "  Agent Bus:  nats://127.0.0.1:4222"
-echo "  LLM API:    http://127.0.0.1:11435"
-echo "  Config:     /etc/agnetic/"
-echo "  Logs:       /var/log/agnetic/"
-echo "  Data:       /var/lib/agnetic/"
+echo "  LLM API:    http://127.0.0.1:11434"
+echo "  Config:     /etc/starship/"
+echo "  Logs:       /var/log/starship/"
+echo "  Data:       /var/lib/starship/"
 echo ""
 echo "  ${YELLOW}Quick Start:${NC}"
-echo "    sudo systemctl start agnetic-core  # Launch the orchestrator agent"
-echo "    sudo systemctl start agnetic-dashboard  # Launch the Web UI"
-echo "    firefox http://localhost:8788  # Open your mission control"
+echo "    sudo systemctl start agnetic-mesh.target"
+echo "    starshipctl --help"
+echo "    firefox http://localhost:8788"
 echo ""
 echo "  ${YELLOW}Self-Healing:${NC}"
 echo "    Both services auto-restart on failure (systemd Restart=always)"

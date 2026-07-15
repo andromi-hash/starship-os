@@ -6,6 +6,7 @@ target/
 starshipctl/starshipctl
 starshipctl/agneticctl
 agent/target/
+src/c/sandbox_spike/sandbox_run
 debian/installed/
 
 # Python

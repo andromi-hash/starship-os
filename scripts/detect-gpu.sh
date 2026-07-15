@@ -16,15 +16,15 @@ warn() { echo -e "${YELLOW}[GPU]${NC} $*"; }
 err()  { echo -e "${RED}[GPU]${NC} $*" >&2; }
 info() { echo -e "${CYAN}[GPU]${NC} $*"; }
 
-STATE_FILE="/tmp/agnetic-gpu-state.json"
+STATE_FILE="/tmp/starship-gpu-state.json"
 OLLAMA_SERVICE="ollama"
 
-# Determine config path: root → /etc, user → ~/.config/agnetic
+# Determine config path: root → /etc, user → ~/.config/starship
 if [[ "$(id -u)" == "0" ]]; then
     OLLAMA_ENV="/etc/systemd/system/ollama.service.d/override.conf"
     SYSTEM_MODE=true
 else
-    OLLAMA_ENV="$HOME/.config/agnetic/ollama-override.conf"
+    OLLAMA_ENV="${XDG_CONFIG_HOME:-$HOME/.config}/starship/ollama-override.conf"
     SYSTEM_MODE=false
 fi
 

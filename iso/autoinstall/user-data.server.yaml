@@ -1,0 +1,30 @@
+#cloud-config
+# Starship OS autoinstall — server profile
+# IMPORTANT: set identity.password to a real hash or inject SSH keys before production use.
+autoinstall:
+  version: 1
+  locale: en_US.UTF-8
+  keyboard:
+    layout: us
+  identity:
+    hostname: starship-server
+    username: starship
+    # Replace with: mkpasswd -m sha-512
+    password: "REPLACE_WITH_MKPASSWD_HASH"
+  ssh:
+    install-server: true
+    allow-pw: true
+  storage:
+    layout:
+      name: lvm
+  packages:
+    - python3
+    - python3-venv
+    - python3-pip
+    - curl
+    - git
+    - build-essential
+    - ca-certificates
+  late-commands:
+    - curtin in-target --target=/target -- bash -c 'mkdir -p /opt/starship /etc/starship /var/lib/starship /var/log/starship && ln -sfn /opt/starship /opt/agnetic && echo "STARSHIP_PROFILE=server" > /etc/starship/firstboot.env && echo "profile: server" > /etc/starship/profile.yaml'
+    - curtin in-target --target=/target -- bash -c 'systemctl enable ssh || true'

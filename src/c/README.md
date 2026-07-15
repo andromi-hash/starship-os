@@ -1,10 +1,21 @@
-# C11 agent runtime (skeleton)
+# C11 agent runtime
 
-Future home of Slermes-inspired native components:
+See **ADR 0001**: `docs/adr/0001-c11-agent-runtime.md`
 
-- `starshipd` — agent loop + NATS
-- `policyexec` — sandbox + policy gate
-- `heald` — self-healing watchdog
+## Layout
 
-See `docs/plans/starship-os-streamline.md` Phase 2–3.
-No sources yet (Phase 0).
+| Path | Purpose |
+|------|---------|
+| `sandbox_spike/` | Authorized spike: `sandbox_run` fork+exec + deny list |
+| (future) `starshipd/` | Agent loop + NATS |
+| (future) `policyexec/` | seccomp + policy gate |
+| (future) `heald/` | Self-healing watchdog |
+
+## Build spike
+
+```bash
+make -C src/c/sandbox_spike
+make -C src/c/sandbox_spike test
+```
+
+Python agent_daemon remains the control plane for Alpha 2.1.

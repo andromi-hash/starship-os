@@ -38,9 +38,9 @@
 - [x] CI workflow paths for monorepo layout
 - [x] Systemd unit path updates → `/opt/starship`
 - [x] Dashboard unify on :8788
-- [ ] Streamline multi-hw install (GPU profiles)
-- [ ] C11 feasibility ADR + sandbox spike
-- [ ] ISO autoinstall
+- [x] Streamline multi-hw install (GPU profiles: edge/server/ops)
+- [x] C11 feasibility ADR + sandbox spike (`docs/adr/0001`, `src/c/sandbox_spike`)
+- [x] ISO autoinstall stubs (`iso/autoinstall/`)
 - [x] OpenCode + oh-my-opencode-slim vendoring (pins + tarballs + install script)
 - [ ] Fleet / ops manager / plant / red-blue
 

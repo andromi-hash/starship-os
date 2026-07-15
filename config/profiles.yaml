@@ -1,0 +1,97 @@
+# Starship OS — hardware install profiles (Alpha 2.1)
+# Selected by scripts/select-profile.sh → /etc/starship/profile.yaml
+
+version: "2.1"
+
+profiles:
+  edge:
+    description: "Low-resource / edge nodes (CPU or small GPU)"
+    min_ram_mb: 4096
+    min_vram_mb: 0
+    dashboard_port: 8788
+    num_ctx: 8192
+    models:
+      required:
+        - nomic-embed-text
+        - granite4.1-3b
+      optional:
+        - Eve-V2-Unleashed
+    agents:
+      - proxy
+      - romi
+    services:
+      - nats
+      - dashboard
+      - staragent
+    ollama:
+      num_parallel: 1
+      max_loaded_models: 1
+      gpu_layers: 0
+
+  server:
+    description: "Default server (Eve-V2 reasoning, 8GB+ RAM or mid GPU)"
+    min_ram_mb: 8192
+    min_vram_mb: 0
+    dashboard_port: 8788
+    num_ctx: 16384
+    models:
+      required:
+        - nomic-embed-text
+        - Eve-V2-Unleashed
+      optional:
+        - qwen2.5:7b
+        - qwen2-math:7b
+    agents:
+      - proxy
+      - romi
+      - ergo
+    services:
+      - nats
+      - dashboard
+      - staragent
+      - message-history
+      - status-bridge
+    ollama:
+      num_parallel: 2
+      max_loaded_models: 2
+      gpu_layers: -1
+
+  ops:
+    description: "Ops console — full mesh + coding models (6GB+ VRAM preferred)"
+    min_ram_mb: 16384
+    min_vram_mb: 6144
+    dashboard_port: 8788
+    num_ctx: 32768
+    models:
+      required:
+        - nomic-embed-text
+        - Eve-V2-Unleashed
+        - qwen2.5:7b
+      optional:
+        - qwen35-claude-coder
+        - granite4.1-8b
+        - qwen2-math:7b
+    agents:
+      - proxy
+      - romi
+      - ergo
+    services:
+      - nats
+      - dashboard
+      - staragent
+      - message-history
+      - status-bridge
+      - watchdog
+    ollama:
+      num_parallel: 4
+      max_loaded_models: 3
+      gpu_layers: -1
+
+# Selection rules (first match wins when auto-detecting)
+selection:
+  - if: "vram_mb >= 6144 and ram_mb >= 16384"
+    profile: ops
+  - if: "vram_mb >= 4096 or ram_mb >= 8192"
+    profile: server
+  - if: "true"
+    profile: edge

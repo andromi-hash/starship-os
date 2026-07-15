@@ -1,0 +1,31 @@
+#cloud-config
+# Starship OS autoinstall — ops profile
+autoinstall:
+  version: 1
+  locale: en_US.UTF-8
+  keyboard:
+    layout: us
+  identity:
+    hostname: starship-ops
+    username: starship
+    password: "REPLACE_WITH_MKPASSWD_HASH"
+  ssh:
+    install-server: true
+    allow-pw: true
+  storage:
+    layout:
+      name: lvm
+  packages:
+    - python3
+    - python3-venv
+    - python3-pip
+    - curl
+    - git
+    - build-essential
+    - cmake
+    - gcc
+    - ca-certificates
+    - jq
+  late-commands:
+    - curtin in-target --target=/target -- bash -c 'mkdir -p /opt/starship /etc/starship /var/lib/starship /var/log/starship && ln -sfn /opt/starship /opt/agnetic && echo "STARSHIP_PROFILE=ops" > /etc/starship/firstboot.env && echo "profile: ops" > /etc/starship/profile.yaml'
+    - curtin in-target --target=/target -- bash -c 'systemctl enable ssh || true'
