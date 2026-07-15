@@ -65,6 +65,8 @@ status:
 	@pgrep -f "agnetic-status.py" > /dev/null && echo "  ● status-bridge   — running" || echo "  ● status-bridge   — stopped"
 	@pgrep -f "message_history.py" > /dev/null && echo "  ● message-history — running" || echo "  ● message-history — stopped"
 	@ss -tlnp 2>/dev/null | grep -q 8788 && echo "  ● dashboard       — running (:8788)" || echo "  ● dashboard       — stopped"
+	@ss -tlnp 2>/dev/null | grep -q 8790 && echo "  ● dashboard-dev   — running (:8790 fleet UI)" || true
+	@pgrep -f "fleet.py daemon" > /dev/null && echo "  ● fleet-daemon    — running" || echo "  ● fleet-daemon    — stopped"
 	@echo ""
 	@echo "=== Ollama Models ==="
 	@$(HOME)/.local/bin/ollama list 2>/dev/null || ollama list 2>/dev/null || echo "  (ollama not available)"
