@@ -2,19 +2,23 @@
 
 All notable changes to **Starship OS**.
 
-## [2.1.0-beta.1] — 2026-07-15
+## [2.1.0] — 2026-07-15
 
 ### Added
-- **Beta** packaging cut of Alpha 2.1 streamline plan (Phases 0–4)
-- Cross-plant ACL, multi-tenant NATS accounts/nkeys, optional TLS
-- C11 `sandbox_run` (seccomp, namespaces) + `policyexec` shared policy JSON
-- Fleet firstboot, ISO autoinstall hooks, `make deb` e2e layout fix
-- Root [`SECURITY.md`](SECURITY.md) + refreshed [`docs/SECURITY.md`](docs/SECURITY.md)
-- README aligned to `/opt/starship`, starshipctl, fleet, dual-prefix NATS
+- **Phase 5 complete** — OpenCode firstboot pantheon, `starshipctl tui`, ISO boot smoke, C11 `starshipd` + `heald` spikes
+- OpenCode install on ops/server firstboot + `/etc/starship/opencode/` preset
+- Interactive TUI: `starshipctl tui` (status/fleet/agents/smoke/opencode)
+- `scripts/iso-boot-smoke.sh` — static gates + optional QEMU probe
+- C11 `starshipd` (dual-prefix agent loop spike) + `heald` (liveness probe spike)
+- Full 2.1 stack: fleet ACL, NATS accounts/TLS, C11 sandbox/policyexec, deb packaging
 
 ### Changed
-- Version line **2.1.0-beta.1**; ops firstboot defaults to NATS accounts
-- systemd units load `/etc/starship/nats.env`
+- Version **2.1.0** (GA cut from beta.1 streamline)
+- Ops firstboot: multi-tenant NATS + native sandbox + OpenCode pantheon config
+
+## [2.1.0-beta.1] — 2026-07-15
+
+Beta packaging cut (Phases 0–4): fleet, NATS accounts, C11 sandbox/policyexec, SECURITY.md.
 
 ## [2.1.0-alpha.3] — 2026-07-15
 

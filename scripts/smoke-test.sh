@@ -60,6 +60,14 @@ check "policyexec red-team deny shell" bash -c './src/c/policyexec/policyexec --
 check "policy_native import" bash -c 'PYTHONPATH=agents python3 -c "from policy_native import policyexec_binary; assert policyexec_binary()"'
 check "policy.default.json present" test -f config/policy.default.json
 check "iso firstboot smoke" bash -c 'bash scripts/iso-firstboot-smoke.sh >/dev/null'
+check "firstboot installs OpenCode path" grep -q 'install-opencode' scripts/starship-firstboot.sh
+check "opencode pantheon config" test -f config/opencode/oh-my-opencode-slim.starship.json
+check "install-opencode script" test -f scripts/install-opencode.sh
+check "starshipctl tui command" bash -c './starshipctl/starshipctl tui --help 2>/dev/null | grep -qi tui || ./starshipctl/starshipctl help 2>/dev/null | grep -qi tui'
+check "starshipd builds" bash -c 'make -C src/c/starshipd all test >/dev/null 2>&1'
+check "heald builds" bash -c 'make -C src/c/heald all test >/dev/null 2>&1'
+check "iso-boot smoke script" test -f scripts/iso-boot-smoke.sh
+check "iso-boot smoke runs" bash -c 'bash scripts/iso-boot-smoke.sh >/dev/null'
 check "bench-sandbox script" test -x scripts/bench-sandbox.sh -o -f scripts/bench-sandbox.sh
 check "sandbox_native import" bash -c 'PYTHONPATH=agents python3 -c "from sandbox_native import sandbox_binary,native_enabled; assert sandbox_binary()"'
 check "C11 p50 under 2ms" bash -c 'bash scripts/bench-sandbox.sh 100 >/dev/null 2>&1'

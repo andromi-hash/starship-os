@@ -8,8 +8,8 @@ See **ADR 0001**: `docs/adr/0001-c11-agent-runtime.md`
 |------|---------|
 | `sandbox_spike/` | `sandbox_run` — fork+exec, seccomp, namespaces |
 | `policyexec/` | Shared policy JSON gate (tools + commands) |
-| (future) `starshipd/` | Agent loop + NATS |
-| (future) `heald/` | Self-healing watchdog |
+| `starshipd/` | Agent-loop spike (dual-prefix subjects; Python still CP) |
+| `heald/` | Healer spike (proc liveness probe) |
 
 ## Build spike
 

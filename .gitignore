@@ -8,6 +8,8 @@ starshipctl/agneticctl
 agent/target/
 src/c/sandbox_spike/sandbox_run
 src/c/policyexec/policyexec
+src/c/starshipd/starshipd
+src/c/heald/heald
 debian/installed/
 
 # Python

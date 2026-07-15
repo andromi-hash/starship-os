@@ -3,7 +3,7 @@ CARGO := $(HOME)/.cargo/bin/cargo
 GO := /tmp/go/bin/go
 export PATH := /tmp/go/bin:$(HOME)/.cargo/bin:$(HOME)/.local/bin:$(PATH)
 
-.PHONY: all build build-agent cli install uninstall run dev stop clean status profile sandbox smoke bench iso-smoke policyexec
+.PHONY: all build build-agent cli install uninstall run dev stop clean status profile sandbox smoke bench iso-smoke policyexec starshipd heald c11 iso-boot
 
 all: build build-agent
 
@@ -83,6 +83,14 @@ sandbox:
 policyexec:
 	$(MAKE) -C src/c/policyexec all test
 
+starshipd:
+	$(MAKE) -C src/c/starshipd all test
+
+heald:
+	$(MAKE) -C src/c/heald all test
+
+c11: sandbox policyexec starshipd heald
+
 bench:
 	@bash scripts/bench-sandbox.sh $(or $(N),200)
 
@@ -95,6 +103,9 @@ smoke:
 
 iso-smoke:
 	@bash scripts/iso-firstboot-smoke.sh
+
+iso-boot:
+	@bash scripts/iso-boot-smoke.sh
 
 # ─── Clean ──────────────────────────────────────────────────────────
 clean:

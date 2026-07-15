@@ -98,6 +98,12 @@ Run: `make bench` or `bash scripts/bench-sandbox.sh 200`
 - Python: `agents/policy_native.py` via `STARSHIP_POLICY_NATIVE=1`
 - Contract: same deny/allow/blocklist arrays as Python `PolicyManager` / fleet roles
 
+## starshipd / heald (Phase 5 spikes)
+
+- `src/c/starshipd` — dual-prefix subject map + heartbeat loop (`--once` for tests)
+- `src/c/heald` — `/proc` liveness probes (logs recoveries; Python healer still CP)
+- Full NATS agent loop + auto-restart remain Python until later ADR
+
 ## References
 
 - `src/c/README.md`
