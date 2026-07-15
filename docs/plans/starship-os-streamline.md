@@ -59,7 +59,7 @@
 ## Phase 3 (in progress) — package & harden for bare-metal
 
 - [x] Install `sandbox_run` to `/opt/starship/bin` (install-daemon)
-- [ ] NATS TLS optional (fleet accounts over TLS)
+- [x] NATS TLS optional (`gen-nats-tls.sh`, `STARSHIP_NATS_TLS=1`, nats_connect TLS)
 - [x] Wire agents/dashboard units to `nats_connect` + `/etc/starship/nats.env`
 - [ ] ISO firstboot smoke (edge/server/ops autoinstall paths)
 - [ ] Seccomp allowlist in C11 sandbox (post-timing)

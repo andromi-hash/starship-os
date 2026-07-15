@@ -24,6 +24,10 @@ max_connections: 256
 debug: false
 trace: false
 
+# Optional TLS — firstboot/gen-nats-tls.sh writes tls/ and sets STARSHIP_NATS_TLS=1
+# Uncomment or include when TLS material exists:
+# include ./tls/tls.conf.snippet
+
 # Resolve system account
 system_account: SYS
 

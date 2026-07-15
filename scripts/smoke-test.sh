@@ -34,6 +34,8 @@ check "fleet-accounts template" test -f nats/fleet-accounts.conf.tmpl
 check "gen-nats-accounts script" test -f scripts/gen-nats-accounts.sh
 check "nats_connect helper" bash -c 'PYTHONPATH=agents python3 -c "from nats_connect import build_nats_url; assert \"nats://\" in build_nats_url()"'
 check "gen accounts conf valid" bash -c 'export PATH="$HOME/go/bin:/root/go/bin:$PATH"; OUT=$(mktemp -d); bash scripts/gen-nats-accounts.sh --out "$OUT" --port 14222 >/dev/null && nats-server -c "$OUT/fleet-accounts.conf" -t >/dev/null && rm -rf "$OUT"'
+check "gen-nats-tls script" test -f scripts/gen-nats-tls.sh
+check "tls material generates" bash -c 'OUT=$(mktemp -d); bash scripts/gen-nats-tls.sh --out "$OUT" --host localhost >/dev/null && test -f "$OUT/ca.pem" && test -f "$OUT/server-cert.pem" && rm -rf "$OUT"'
 check "firstboot syntax" bash -n scripts/starship-firstboot.sh
 check "firstboot wires fleet-bus for ops" grep -q '_enable_fleet_bus' scripts/starship-firstboot.sh
 check "firstboot wires accounts" grep -q '_enable_accounts_bus' scripts/starship-firstboot.sh

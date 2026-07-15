@@ -130,6 +130,15 @@ Accounts: `STARSHIP_OPS` · `STARSHIP_EDGE` · `STARSHIP_RANGE` (red/blue) · `S
 Nkeys: optional (`nk` from `go install github.com/nats-io/nkeys/nk@latest`) → `creds/*.nk`  
 Heartbeats dual-publish `starship.fleet.heartbeat` + `agnetic.fleet.heartbeat`.
 
+### Optional TLS
+
+```bash
+bash scripts/gen-nats-tls.sh --out /etc/starship/nats/tls --host ops.example
+# firstboot: STARSHIP_NATS_TLS=1 STARSHIP_PROFILE=ops sudo bash scripts/starship-firstboot.sh
+```
+
+Appends `tls { ... }` to fleet-accounts conf; clients use `STARSHIP_NATS_CA` + `tls://` via `nats_connect.py`.
+
 ## Firstboot
 
 `scripts/starship-firstboot.sh`:

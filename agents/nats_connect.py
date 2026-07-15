@@ -1,17 +1,19 @@
-"""Shared NATS connect helper — token / user-pass / nkey.
+"""Shared NATS connect helper — token / user-pass / nkey / TLS.
 
 Env (priority):
   1. NATS_URL with embedded user:pass or :token@
   2. NATS_USER + NATS_PASSWORD
   3. STARSHIP_NATS_TOKEN (token auth)
   4. STARSHIP_NATS_NKEY_SEED or path in STARSHIP_NATS_NKEY_SEED_FILE
+  5. STARSHIP_NATS_TLS=1 + STARSHIP_NATS_CA[/CERT/KEY] for TLS
 """
 
 from __future__ import annotations
 
 import os
+import ssl
 from typing import Any, Optional
-from urllib.parse import quote, urlparse, urlunparse
+from urllib.parse import quote
 
 
 def build_nats_url(
@@ -25,6 +27,11 @@ def build_nats_url(
     user = user if user is not None else os.getenv("NATS_USER", "").strip() or None
     password = password if password is not None else os.getenv("NATS_PASSWORD", "").strip() or None
     token = token if token is not None else os.getenv("STARSHIP_NATS_TOKEN", "").strip() or None
+
+    # Upgrade scheme when TLS requested
+    tls_on = os.getenv("STARSHIP_NATS_TLS", "").strip().lower() in ("1", "true", "yes", "on")
+    if tls_on and url.startswith("nats://"):
+        url = "tls://" + url[len("nats://"):]
 
     if "://" not in url:
         return url
@@ -49,14 +56,34 @@ def nkey_seed() -> Optional[str]:
     return None
 
 
+def tls_context() -> Optional[ssl.SSLContext]:
+    """Build SSL context when STARSHIP_NATS_TLS is enabled."""
+    flag = os.getenv("STARSHIP_NATS_TLS", "").strip().lower()
+    if flag not in ("1", "true", "yes", "on"):
+        return None
+    ca = os.getenv("STARSHIP_NATS_CA", "").strip()
+    cert = os.getenv("STARSHIP_NATS_CERT", "").strip()
+    key = os.getenv("STARSHIP_NATS_KEY", "").strip()
+    ctx = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+    if ca and os.path.isfile(ca):
+        ctx.load_verify_locations(cafile=ca)
+    else:
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+    if cert and key and os.path.isfile(cert) and os.path.isfile(key):
+        ctx.load_cert_chain(certfile=cert, keyfile=key)
+    return ctx
+
+
 def connect_kwargs() -> dict[str, Any]:
-    """Extra kwargs for nats.connect (nkeys if available)."""
+    """Extra kwargs for nats.connect (nkeys / tls if available)."""
     kw: dict[str, Any] = {}
     seed = nkey_seed()
-    if not seed:
-        return kw
-    # nats-py accepts nkeys_seed_str when `nkeys` package installed
-    kw["nkeys_seed_str"] = seed
+    if seed:
+        kw["nkeys_seed_str"] = seed
+    tls = tls_context()
+    if tls is not None:
+        kw["tls"] = tls
     return kw
 
 
@@ -70,9 +97,9 @@ async def connect(url: Optional[str] = None, **kwargs):
     # If nkeys provided, prefer nkey auth (drop userinfo from URL to avoid conflict)
     if kw.get("nkeys_seed_str") or kw.get("nkeys_seed"):
         try:
-            return await nats_connect(final_url.split("@")[-1] if "@" in final_url else final_url, **kw)
+            host = final_url.split("@")[-1] if "@" in final_url else final_url
+            return await nats_connect(host, **kw)
         except Exception:
-            # Fall back to user/password URL without nkeys
             kw.pop("nkeys_seed_str", None)
             kw.pop("nkeys_seed", None)
             return await nats_connect(final_url, **kw)

@@ -10,7 +10,8 @@ All notable changes to **Starship OS**.
 - **C11 sandbox bench** (`make bench`, p50 ~0.5ms) + optional `STARSHIP_SANDBOX_NATIVE=1` bridge
 - **nats_connect** helper — user/pass / token / nkey for fleet clients
 - **sandbox_run** installed to `/opt/starship/bin` via install-daemon
-- Smoke suite expanded (33 checks)
+- **NATS TLS** optional — `gen-nats-tls.sh`, `STARSHIP_NATS_TLS=1`
+- Smoke suite expanded (35+ checks)
 
 ### Changed
 - Ops profile firstboot: agent-bus → multi-tenant NATS accounts

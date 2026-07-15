@@ -62,5 +62,6 @@ nats/nats-server.pid
 nats/nats-server.log
 nats/creds/
 nats/**/creds/
+nats/tls/
 **/fleet-accounts.conf
 !nats/fleet-accounts.conf.tmpl
