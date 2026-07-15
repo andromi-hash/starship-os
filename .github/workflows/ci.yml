@@ -18,17 +18,38 @@ jobs:
       - run: ruff check agents/ dashboard/ services/ || true
       - run: ruff format --check agents/ dashboard/ services/ || true
 
-  test:
+  smoke:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install pytest pytest-asyncio pytest-aiohttp pytest-cov httpx pyyaml aiohttp
-      - run: pytest tests/ -v --cov=agents --cov=services --cov=dashboard --cov-report=xml || true
-      - uses: codecov/codecov-action@v4
-        continue-on-error: true
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+      - name: Install deps
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libseccomp-dev gcc pkg-config
+          pip install pyyaml nats-py
+      - name: Build CLI
+        run: |
+          export PATH="$(go env GOPATH)/bin:$PATH"
+          cd starshipctl && go build -o starshipctl .
+      - name: Smoke
+        env:
+          PATH: /usr/local/go/bin:/home/runner/go/bin:/usr/bin:/bin
+        run: |
+          export PATH="$(go env GOPATH)/bin:$(pwd)/starshipctl:$PATH"
+          # install nats-server for accounts conf -t
+          curl -sL https://github.com/nats-io/nats-server/releases/download/v2.10.24/nats-server-v2.10.24-linux-amd64.tar.gz | tar xz
+          sudo cp nats-server-v2.10.24-linux-amd64/nats-server /usr/local/bin/
+          # optional nkeys
+          go install github.com/nats-io/nkeys/nk@latest || true
+          export PATH="$(go env GOPATH)/bin:$PATH"
+          bash scripts/smoke-test.sh
+          bash scripts/iso-firstboot-smoke.sh
 
   build-go:
     runs-on: ubuntu-latest
@@ -46,3 +67,11 @@ jobs:
       - uses: actions/checkout@v4
       - run: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
       - run: ~/.cargo/bin/cargo build --release --manifest-path agent/Cargo.toml
+
+  build-c11:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq libseccomp-dev gcc pkg-config
+      - run: make -C src/c/sandbox_spike all test
+      - run: ./src/c/sandbox_spike/sandbox_run --help | grep -q built-in

@@ -76,6 +76,13 @@ Run: `make bench` or `bash scripts/bench-sandbox.sh 200`
 - Default deny: `socket`, `mount`, `ptrace`, `reboot`, …
 - Disable: `./sandbox_run --no-seccomp -- …`
 
+## Namespaces (Phase 4)
+
+- Best-effort `unshare(CLONE_NEWNS)` + `unshare(CLONE_NEWPID)` before exec
+- Soft-fail without `CAP_SYS_ADMIN` (common for non-root agents)
+- PID NS re-forks so command is PID 1 in the new namespace
+- Disable: `./sandbox_run --no-ns -- …`
+
 ## Optional Python bridge
 
 - `agents/sandbox_native.py` — subprocess bridge to `sandbox_run`

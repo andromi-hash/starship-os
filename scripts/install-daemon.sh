@@ -157,9 +157,17 @@ cp -r "$REPO_DIR/souls/"* /opt/agnetic/lib/agnetic/souls/ 2>/dev/null || true
 # Skills (agents subdir)
 cp -r "$REPO_DIR/agents/skills/"* /opt/agnetic/lib/agnetic/agents/skills/ 2>/dev/null || true
 
-# GPU detection
-cp "$REPO_DIR/scripts/detect-gpu.sh" /opt/agnetic/bin/
-chmod +x /opt/agnetic/bin/detect-gpu.sh
+# GPU detection + firstboot + NATS helpers
+cp "$REPO_DIR/scripts/detect-gpu.sh" /opt/starship/bin/
+cp "$REPO_DIR/scripts/starship-firstboot.sh" /opt/starship/bin/ 2>/dev/null || true
+cp "$REPO_DIR/scripts/select-profile.sh" /opt/starship/bin/ 2>/dev/null || true
+cp "$REPO_DIR/scripts/gen-nats-accounts.sh" /opt/starship/bin/ 2>/dev/null || true
+cp "$REPO_DIR/scripts/gen-nats-tls.sh" /opt/starship/bin/ 2>/dev/null || true
+chmod +x /opt/starship/bin/* 2>/dev/null || true
+mkdir -p /opt/starship/lib/starship/scripts
+cp "$REPO_DIR/scripts/starship-firstboot.sh" /opt/starship/lib/starship/scripts/ 2>/dev/null || true
+cp "$REPO_DIR/scripts/gen-nats-accounts.sh" /opt/starship/lib/starship/scripts/ 2>/dev/null || true
+cp "$REPO_DIR/scripts/gen-nats-tls.sh" /opt/starship/lib/starship/scripts/ 2>/dev/null || true
 
 log "Application code installed"
 

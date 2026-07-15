@@ -229,7 +229,12 @@ STARSHIP_FLEET_TEAM=${STARSHIP_FLEET_TEAM:-ops}
 STARSHIP_FLEET_ROLES=${ROLES_CSV}
 STARSHIP_NATS_MODE=accounts
 STARSHIP_NATS_ROLE=${role_env}
+STARSHIP_SANDBOX_NATIVE=1
 EOF
+  # Ops: prefer C11 sandbox_run for shell tools
+  if ! grep -q '^STARSHIP_SANDBOX_NATIVE=' /etc/starship/nats.env 2>/dev/null; then
+    echo "STARSHIP_SANDBOX_NATIVE=1" >> /etc/starship/nats.env
+  fi
   # Optional TLS (STARSHIP_NATS_TLS=1)
   if [[ "${STARSHIP_NATS_TLS:-}" == "1" || "${STARSHIP_NATS_TLS:-}" == "true" ]]; then
     local tls_gen="$REPO_DIR/scripts/gen-nats-tls.sh"

@@ -62,13 +62,33 @@ ln -sf /opt/starship/bin/starshipctl "$INSTALLED/usr/local/bin/starshipctl"
 ln -sf /opt/starship/bin/starshipctl "$INSTALLED/usr/local/bin/agneticctl"
 cp "$REPO_DIR/agent/target/release/staragent" "$INSTALLED/opt/starship/bin/"
 cp "$REPO_DIR/scripts/detect-gpu.sh" "$INSTALLED/opt/starship/bin/"
+cp "$REPO_DIR/scripts/starship-firstboot.sh" "$INSTALLED/opt/starship/bin/"
+cp "$REPO_DIR/scripts/select-profile.sh" "$INSTALLED/opt/starship/bin/" 2>/dev/null || true
+cp "$REPO_DIR/scripts/gen-nats-accounts.sh" "$INSTALLED/opt/starship/bin/" 2>/dev/null || true
+cp "$REPO_DIR/scripts/gen-nats-tls.sh" "$INSTALLED/opt/starship/bin/" 2>/dev/null || true
+# C11 sandbox
+if [[ ! -x "$REPO_DIR/src/c/sandbox_spike/sandbox_run" ]]; then
+    make -C "$REPO_DIR/src/c/sandbox_spike" all 2>/dev/null || true
+fi
+if [[ -x "$REPO_DIR/src/c/sandbox_spike/sandbox_run" ]]; then
+    cp "$REPO_DIR/src/c/sandbox_spike/sandbox_run" "$INSTALLED/opt/starship/bin/"
+    ln -sf /opt/starship/bin/sandbox_run "$INSTALLED/usr/local/bin/sandbox_run"
+fi
 
 # Python application code
+mkdir -p "$INSTALLED/opt/starship/lib/starship/services"
 cp "$REPO_DIR/agents/agent_daemon.py" "$INSTALLED/opt/starship/lib/starship/agents/"
+cp "$REPO_DIR/agents/nats_subjects.py" "$INSTALLED/opt/starship/lib/starship/agents/" 2>/dev/null || true
+cp "$REPO_DIR/agents/nats_connect.py" "$INSTALLED/opt/starship/lib/starship/agents/" 2>/dev/null || true
+cp "$REPO_DIR/agents/sandbox_native.py" "$INSTALLED/opt/starship/lib/starship/agents/" 2>/dev/null || true
+cp "$REPO_DIR/agents/fleet_policy.py" "$INSTALLED/opt/starship/lib/starship/agents/" 2>/dev/null || true
+cp "$REPO_DIR/agents/tools.py" "$INSTALLED/opt/starship/lib/starship/agents/" 2>/dev/null || true
+cp "$REPO_DIR/agents/security.py" "$INSTALLED/opt/starship/lib/starship/agents/" 2>/dev/null || true
 cp "$REPO_DIR/agents/run_agent.sh" "$INSTALLED/opt/starship/lib/starship/agents/" 2>/dev/null || true
 cp "$REPO_DIR/agents/scheduler.py" "$INSTALLED/opt/starship/lib/starship/agents/" 2>/dev/null || true
 cp "$REPO_DIR/agents/workflows.py" "$INSTALLED/opt/starship/lib/starship/agents/" 2>/dev/null || true
 cp -r "$REPO_DIR/agents/skills/"* "$INSTALLED/opt/starship/lib/starship/agents/skills/" 2>/dev/null || true
+cp "$REPO_DIR/services/fleet.py" "$INSTALLED/opt/starship/lib/starship/services/" 2>/dev/null || true
 
 cp "$REPO_DIR/dashboard/server.py" "$INSTALLED/opt/starship/lib/starship/dashboard/"
 cp "$REPO_DIR/dashboard/index.html" "$INSTALLED/opt/starship/lib/starship/dashboard/"
@@ -76,14 +96,24 @@ cp "$REPO_DIR/dashboard/index.html" "$INSTALLED/opt/starship/lib/starship/dashbo
 cp "$REPO_DIR/tray/agnetic-status.py" "$INSTALLED/opt/starship/lib/starship/tray/"
 
 cp "$REPO_DIR/scripts/message_history.py" "$INSTALLED/opt/starship/lib/starship/scripts/"
+cp "$REPO_DIR/scripts/starship-firstboot.sh" "$INSTALLED/opt/starship/lib/starship/scripts/" 2>/dev/null || true
+cp "$REPO_DIR/scripts/gen-nats-accounts.sh" "$INSTALLED/opt/starship/lib/starship/scripts/" 2>/dev/null || true
+cp "$REPO_DIR/scripts/gen-nats-tls.sh" "$INSTALLED/opt/starship/lib/starship/scripts/" 2>/dev/null || true
 
 cp -r "$REPO_DIR/skills/"* "$INSTALLED/opt/starship/lib/starship/skills/" 2>/dev/null || true
 cp -r "$REPO_DIR/souls/"* "$INSTALLED/opt/starship/lib/starship/souls/" 2>/dev/null || true
 
 # Configs
+mkdir -p "$INSTALLED/etc/starship/nats" "$INSTALLED/etc/starship/opencode"
 cp "$REPO_DIR/nats/agent-bus.conf" "$INSTALLED/etc/starship/nats/"
+cp "$REPO_DIR/nats/fleet-bus.conf" "$INSTALLED/etc/starship/nats/" 2>/dev/null || true
+cp "$REPO_DIR/nats/fleet-auth.yaml" "$INSTALLED/etc/starship/nats/" 2>/dev/null || true
+cp "$REPO_DIR/nats/fleet-accounts.conf.tmpl" "$INSTALLED/etc/starship/nats/" 2>/dev/null || true
 cp "$REPO_DIR/nats/server.conf" "$INSTALLED/etc/starship/nats/" 2>/dev/null || true
 cp "$REPO_DIR/nats/subjects.yaml" "$INSTALLED/etc/starship/nats/" 2>/dev/null || true
+ln -sfn /etc/starship/nats/agent-bus.conf "$INSTALLED/etc/starship/nats/active.conf"
+cp "$REPO_DIR/config/fleet.yaml" "$INSTALLED/etc/starship/" 2>/dev/null || true
+cp "$REPO_DIR/config/profiles.yaml" "$INSTALLED/etc/starship/" 2>/dev/null || true
 cp "$REPO_DIR/agents/config.yaml" "$INSTALLED/etc/starship/" 2>/dev/null || true
 cp "$REPO_DIR/agents/proxy.yaml" "$INSTALLED/etc/starship/" 2>/dev/null || true
 cp "$REPO_DIR/agents/romi.yaml" "$INSTALLED/etc/starship/" 2>/dev/null || true
@@ -98,6 +128,7 @@ cp "$REPO_DIR/systemd/agnetic-dashboard.service" "$INSTALLED/lib/systemd/system/
 cp "$REPO_DIR/systemd/agnetic-status-bridge.service" "$INSTALLED/lib/systemd/system/"
 cp "$REPO_DIR/systemd/agnetic-message-history.service" "$INSTALLED/lib/systemd/system/"
 cp "$REPO_DIR/systemd/agnetic-mesh.target" "$INSTALLED/lib/systemd/system/"
+cp "$REPO_DIR/systemd/starship-fleet.service" "$INSTALLED/lib/systemd/system/" 2>/dev/null || true
 
 # Set permissions
 chmod 755 "$INSTALLED/opt/starship/bin/"*

@@ -12,8 +12,11 @@ All notable changes to **Starship OS**.
 - **sandbox_run** installed to `/opt/starship/bin` via install-daemon
 - **NATS TLS** optional — `gen-nats-tls.sh`, `STARSHIP_NATS_TLS=1`
 - **C11 seccomp** allowlist in `sandbox_run` (libseccomp)
+- **C11 namespaces** best-effort NEWNS/NEWPID (`--no-ns` to disable)
 - **ISO firstboot smoke** — `scripts/iso-firstboot-smoke.sh`; autoinstall invokes firstboot
-- Smoke suite expanded (37+ checks)
+- **Packaging** — `.deb` / install-daemon ship fleet, accounts, firstboot, sandbox_run
+- **CI** — smoke + C11 + libseccomp jobs
+- Smoke suite expanded (40+ checks)
 
 ### Changed
 - Ops profile firstboot: agent-bus → multi-tenant NATS accounts

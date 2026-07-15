@@ -1,6 +1,6 @@
 # Starship OS — Streamline, Standardize, Bare-Metal Plan (Alpha 2.1)
 
-**Status:** Phase 0–3 complete (Alpha 2.1.0-alpha.3 packaging)  
+**Status:** Phase 0–3 complete · Phase 4 in progress  
 **Canonical repo:** https://github.com/andromi-hash/starship-os  
 **Legacy Alpha 2.0:** https://github.com/andromi-hash/agnetic-os (archived source)
 
@@ -56,13 +56,23 @@
 - [x] README / badge version sync
 - [x] Tag `v2.1.0-alpha.3`
 
-## Phase 3 (in progress) — package & harden for bare-metal
+## Phase 3 (done) — package & harden for bare-metal
 
 - [x] Install `sandbox_run` to `/opt/starship/bin` (install-daemon)
 - [x] NATS TLS optional (`gen-nats-tls.sh`, `STARSHIP_NATS_TLS=1`, nats_connect TLS)
 - [x] Wire agents/dashboard units to `nats_connect` + `/etc/starship/nats.env`
 - [x] ISO firstboot smoke (`scripts/iso-firstboot-smoke.sh` + autoinstall hooks)
 - [x] Seccomp allowlist in C11 sandbox (`HAVE_SECCOMP`, libseccomp)
+
+## Phase 4 (in progress) — packaging completeness + isolation
+
+- [x] C11 namespaces best-effort (`CLONE_NEWNS` / `CLONE_NEWPID`, soft-fail)
+- [x] `.deb` ships fleet / NATS accounts / firstboot / sandbox_run / fleet unit
+- [x] install-daemon + firstboot install gen scripts; ops enables `STARSHIP_SANDBOX_NATIVE=1`
+- [x] CI: smoke + C11 + nats-server + libseccomp
+- [ ] End-to-end `make deb` on clean tree (CI or local)
+- [ ] policyexec C11 spike (policy JSON shared with Python)
+- [ ] Alpha 2.1 beta tag when packaging green
 
 ## Language map
 
