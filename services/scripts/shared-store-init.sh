@@ -1,5 +1,5 @@
 # ================================================================================
-# Agnetic OS - Unified Agent Architecture v1.0  
+# Starship OS - Unified Agent Architecture v1.0  
 # ================================================================================
 # Shared Memory/Skills Store (mimics ~/.hermes structure for opencode consistency)
 # All 4 agents load from this store ensuring seamless cross-session context

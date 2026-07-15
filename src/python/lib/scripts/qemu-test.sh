@@ -1,5 +1,5 @@
 #!/bin/bash
-# QEMU boot test for Agnetic Starship OS
+# QEMU boot test for Starship OS
 # Usage: ./scripts/qemu-test.sh [path-to-iso]
 # Requires: qemu-system-x86_64, kvm (optional)
 

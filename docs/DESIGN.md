@@ -1,4 +1,4 @@
-# Agnetic OS — Design Language
+# Starship OS — Design Language
 
 > Commonwealth Andromeda / Highguard inspired system interface.
 > A local-first AI agent operating system, architected like a agnetic bridge.
@@ -511,7 +511,7 @@ The following outputs should be generated from this spec:
 
 ## 13. Agent Prompt Guide
 
-When generating Agnetic OS interfaces, prompt the model to:
+When generating Starship OS interfaces, prompt the model to:
 
 - Set `--color-bg` to `#0A0E1A` (deep space) as the root background
 - Use Orbitron or Inter for display text; JetBrains Mono or Fira Code for data

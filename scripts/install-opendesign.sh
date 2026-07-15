@@ -1,5 +1,5 @@
 #!/bin/bash
-# Install Open Design for Agnetic OS
+# Install Open Design for Starship OS
 set -e
 
 INSTALL_DIR="/opt/open-design"

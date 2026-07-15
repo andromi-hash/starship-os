@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Agnetic OS Web Dashboard — dynamic config, real-time status, Ollama management."""
+"""Starship OS Web Dashboard — dynamic config, real-time status, Ollama management."""
 
 import sys
 import os
@@ -371,7 +371,7 @@ def build_system_prompt(agent_name):
         for name, info in TOOL_DEFINITIONS.items()
     )
     return (
-        f"You are {agent_name}, an AI agent in the Agnetic OS system.\n"
+        f"You are {agent_name}, an AI agent in the Starship OS system.\n"
         f"You have access to these tools:\n{tool_desc}\n\n"
         "To use a tool, output a JSON block on its own line:\n"
         '{"tool": "shell", "args": {"command": "ls -la"}}\n\n'

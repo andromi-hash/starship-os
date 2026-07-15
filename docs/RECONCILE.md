@@ -23,7 +23,7 @@
 - [x] CI paths fixed (`starshipctl/`, `agent/Cargo.toml`, master+main)
 - [x] Dashboard unify on :8788
 - [x] Systemd unit path updates → `/opt/starship`
-- [ ] Full `starship` branding rename in remaining code/docs
-- [ ] NATS subject dual-publish `agnetic.*` / `starship.*`
+- [x] Full `starship` branding rename in remaining code/docs (product strings)
+- [x] NATS subject dual-publish `starship.*` (primary) / `agnetic.*` (legacy)
 - [x] Vendor OpenCode + oh-my-opencode-slim pins (1.18.2 / 2.2.2)
 - [ ] Archive notice PR on agnetic-os README

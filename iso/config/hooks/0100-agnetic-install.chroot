@@ -1,8 +1,8 @@
 #!/bin/sh
-# live-build hook: install Agnetic Starship OS after base system
+# live-build hook: install Starship OS after base system
 set -e
 
-echo "=== Agnetic Starship ISO — Custom Hook ==="
+echo "=== Starship OS ISO — Custom Hook ==="
 
 # Install Ollama
 curl -fsSL https://ollama.com/install.sh | sh
@@ -12,7 +12,7 @@ NATS_VERSION="2.14.3"
 curl -fsSL "https://github.com/nats-io/nats-server/releases/download/v${NATS_VERSION}/nats-server-v${NATS_VERSION}-linux-amd64.tar.gz" | tar xz -C /usr/local/bin --strip-components=1 nats-server-v${NATS_VERSION}-linux-amd64/nats-server
 
 # Create agnetic user
-useradd --system --no-create-home --shell /usr/sbin/nologin --comment "Agnetic OS" agnetic || true
+useradd --system --no-create-home --shell /usr/sbin/nologin --comment "Starship OS" agnetic || true
 useradd --system --no-create-home --shell /usr/sbin/nologin --comment "NATS" nats || true
 
 # Create directories
@@ -30,4 +30,4 @@ python3 -m venv /opt/agnetic/venv
 chown -R agnetic:agnetic /opt/agnetic /etc/agnetic /var/lib/agnetic /var/log/agnetic
 chown -R nats:nats /var/lib/agnetic/nats
 
-echo "=== Agnetic Starship ISO — Hook Complete ==="
+echo "=== Starship OS ISO — Hook Complete ==="

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Agnetic OS — Output Evaluator Agent
+Starship OS — Output Evaluator Agent
 
 Separate evaluator that reviews agent output quality before delivery.
 Implements the "Critic" pattern: Output Validation + Error Correction.
@@ -1229,7 +1229,7 @@ def cmd_serve(args: list[str]):
 
 def cmd_help():
     print("""\
-Agnetic OS Output Evaluator Agent
+Starship OS Output Evaluator Agent
 
 Usage:
   python3 evaluator.py <command> [args]

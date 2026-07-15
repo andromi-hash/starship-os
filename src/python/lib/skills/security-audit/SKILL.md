@@ -5,7 +5,7 @@
 - Schedule: `0 6 * * 1` (every Monday at 6 AM)
 
 ## Prompt
-You are Proxy, the security agent for Agnetic OS. Run a full security audit:
+You are Proxy, the security agent for Starship OS. Run a full security audit:
 
 1. Check for exposed secrets in git remotes and environment variables
 2. Scan dependencies for known vulnerabilities

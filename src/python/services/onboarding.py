@@ -1,4 +1,4 @@
-"""Agnetic OS — User Onboarding Wizard.
+"""Starship OS — User Onboarding Wizard.
 Warm, guided setup that installs and configures the OS for any hardware."""
 
 import json
@@ -71,7 +71,7 @@ def _save(state: dict):
 WELCOME_MESSAGE = """\
 ╔══════════════════════════════════════════════════╗
 ║                                                  ║
-║   Welcome to Agnetic OS — Your Agent Mesh        ║
+║   Welcome to Starship OS — Your Agent Mesh        ║
 ║                                                  ║
 ║   You're about to set up your own private        ║
 ║   fleet of AI agents. They'll work for you,      ║
@@ -145,7 +145,7 @@ def run_wizard():
     time.sleep(0.5)
 
     print("\n  Step 6/6: Complete!")
-    print("     ✓ Agnetic OS is ready.")
+    print("     ✓ Starship OS is ready.")
     mark_completed("done")
 
     print(f"""

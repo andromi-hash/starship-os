@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Agnetic OS Dashboard Server — Hermes WebUI-inspired command & control."""
+"""Starship OS Dashboard Server — Hermes WebUI-inspired command & control."""
 
 import os
 import sys

@@ -1,4 +1,4 @@
-# Agnetic OS — Provider Connections
+# Starship OS — Provider Connections
 # Add API keys and endpoints for external providers.
 # Restart agents after changing this file:
 #   systemctl restart starship-agent@<agent>  (or kill + relaunch)

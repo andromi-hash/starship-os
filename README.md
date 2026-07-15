@@ -11,7 +11,7 @@
 
 Starship OS is a local-first, AI-native OS layer where autonomous agents communicate over NATS/JetStream, execute tools in a sandboxed environment, and present a real-time command-and-control dashboard. No cloud required. Everything runs on your hardware.
 
-**Lineage:** Alpha (`starship-os` scaffold) → Alpha 2.0 ([agnetic-os](https://github.com/andromi-hash/agnetic-os)) → **Alpha 2.1** (this monorepo: packaging + governance/memory/C2).
+**Lineage:** Alpha (`starship-os` scaffold) → Alpha 2.0 ([agnetic-os](https://github.com/andromi-hash/starship-os)) → **Alpha 2.1** (this monorepo: packaging + governance/memory/C2).
 
 ### Alpha 2.1 highlights
 

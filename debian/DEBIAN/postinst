@@ -3,14 +3,14 @@
 set -e
 
 echo "╔══════════════════════════════════════════════╗"
-echo "║  Agnetic Starship OS — Post-Install Setup   ║"
+echo "║  Starship OS — Post-Install Setup   ║"
 echo "╚══════════════════════════════════════════════╝"
 echo ""
 
 # ─── 1. Create system users ─────────────────────────────────────────
 if ! id -u agnetic &>/dev/null 2>&1; then
     useradd --system --no-create-home --shell /usr/sbin/nologin \
-        --comment "Agnetic OS Service Account" agnetic
+        --comment "Starship OS Service Account" agnetic
     echo "[OK] Created user: agnetic"
 else
     echo "[OK] User agnetic already exists"
@@ -93,6 +93,6 @@ echo ""
 echo "  Start:   systemctl start agnetic-mesh.target"
 echo "  Status:  systemctl status agnetic-mesh.target"
 echo "  Logs:    journalctl -u agnetic-* -f"
-echo "  CLI:     agneticctl --help"
+echo "  CLI:     starshipctl --help"
 echo "  Dashboard: http://localhost:8788"
 echo ""

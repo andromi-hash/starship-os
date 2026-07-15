@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to **Starship OS** (formerly Agnetic Starship OS).
+All notable changes to **Starship OS** (formerly Starship OS).
 
 ## [2.1.0-alpha.1] — 2026-07-15
 
@@ -51,7 +51,7 @@ All notable changes to **Starship OS** (formerly Agnetic Starship OS).
 ## [0.1.0] — 2026-07-11
 
 ### Added
-- **Restructured** as Agnetic Starship OS monorepo
+- **Restructured** as Starship OS monorepo
 - **GPU Detection** — `scripts/detect-gpu.sh` (NVIDIA/AMD/Intel, WSL2 support)
 - **Systemd Daemon Mode** — 7 service units with security hardening
 - **Debian Packaging** — `.deb` package with postinst/prerm/postrm scripts

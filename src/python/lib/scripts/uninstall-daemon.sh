@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Agnetic Starship OS — Daemon Uninstaller
+# Starship OS — Daemon Uninstaller
 # Stops services, removes files, removes users.
 set -euo pipefail
 
@@ -16,7 +16,7 @@ if [[ "$(id -u)" != "0" ]]; then
     exit 1
 fi
 
-echo "This will stop all Agnetic OS services and remove installed files."
+echo "This will stop all Starship OS services and remove installed files."
 read -p "Continue? [y/N] " -n 1 -r
 echo ""
 [[ ! $REPLY =~ ^[Yy]$ ]] && exit 0

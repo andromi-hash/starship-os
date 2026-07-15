@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Agnetic Starship OS — Systemd Daemon Installer
+# Starship OS — Systemd Daemon Installer
 # Installs all components to /opt/agnetic, creates users, enables services.
 # Must run as root.
 set -euo pipefail
@@ -24,7 +24,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_DIR="$(dirname "$SCRIPT_DIR")"
 
 echo -e "${BLUE}╔══════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║  Agnetic Starship OS — Daemon Installer     ║${NC}"
+echo -e "${BLUE}║  Starship OS — Daemon Installer     ║${NC}"
 echo -e "${BLUE}╚══════════════════════════════════════════════╝${NC}"
 echo ""
 
@@ -33,7 +33,7 @@ log "Creating system users..."
 
 if ! id -u agnetic &>/dev/null; then
     useradd --system --no-create-home --shell /usr/sbin/nologin \
-        --comment "Agnetic OS Service Account" agnetic
+        --comment "Starship OS Service Account" agnetic
     log "Created user: agnetic"
 else
     info "User agnetic already exists"
@@ -109,12 +109,15 @@ fi
 log "Installing Python application code..."
 
 # Agent daemon
-cp "$REPO_DIR/agents/agent_daemon.py" /opt/agnetic/lib/agnetic/agents/
-cp "$REPO_DIR/agents/run_agent.sh" /opt/agnetic/lib/agnetic/agents/ 2>/dev/null || true
-cp "$REPO_DIR/agents/scheduler.py" /opt/agnetic/lib/agnetic/agents/ 2>/dev/null || true
-cp "$REPO_DIR/agents/workflows.py" /opt/agnetic/lib/agnetic/agents/ 2>/dev/null || true
-chmod +x /opt/agnetic/lib/agnetic/agents/agent_daemon.py
-chmod +x /opt/agnetic/lib/agnetic/agents/run_agent.sh 2>/dev/null || true
+cp "$REPO_DIR/agents/agent_daemon.py" /opt/starship/lib/starship/agents/
+cp "$REPO_DIR/agents/nats_subjects.py" /opt/starship/lib/starship/agents/ 2>/dev/null || true
+cp "$REPO_DIR/agents/run_agent.sh" /opt/starship/lib/starship/agents/ 2>/dev/null || true
+cp "$REPO_DIR/agents/scheduler.py" /opt/starship/lib/starship/agents/ 2>/dev/null || true
+cp "$REPO_DIR/agents/workflows.py" /opt/starship/lib/starship/agents/ 2>/dev/null || true
+cp "$REPO_DIR/agents/tools.py" /opt/starship/lib/starship/agents/ 2>/dev/null || true
+cp "$REPO_DIR/agents/security.py" /opt/starship/lib/starship/agents/ 2>/dev/null || true
+chmod +x /opt/starship/lib/starship/agents/agent_daemon.py
+chmod +x /opt/starship/lib/starship/agents/run_agent.sh 2>/dev/null || true
 
 # Dashboard
 cp "$REPO_DIR/dashboard/server.py" /opt/agnetic/lib/agnetic/dashboard/

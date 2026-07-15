@@ -31,7 +31,7 @@ var telemetryCmd = &cobra.Command{
 		}
 		defer nc.Close()
 
-		sub, err := nc.SubscribeSync("agnetic.telemetry")
+		sub, err := nc.SubscribeSync(primarySubject("telemetry"))
 		if err != nil {
 			fmt.Printf("Subscribe failed: %v\n", err)
 			return

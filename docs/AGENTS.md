@@ -1,4 +1,4 @@
-# Agnetic OS — Agent Context File
+# Starship OS — Agent Context File
 
 ## System Overview
 Self-hosted AI agent mesh with 43 tools, 20 toolsets, 7 memory types, running on Ollama + NATS. Dashboard on port 8788. All code at `/opt/agnetic/`.

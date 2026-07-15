@@ -1,5 +1,5 @@
 # vim:syntax=apparmor
-# Profile for Agnetic OS agent daemons
+# Profile for Starship OS agent daemons
 
 #include <tunables/global>
 

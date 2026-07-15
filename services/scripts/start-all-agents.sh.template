@@ -1,5 +1,5 @@
 #!/bin/bash
-# Agnetic OS - Unified Memory/Skills Architecture
+# Starship OS - Unified Memory/Skills Architecture
 # Designed to mirror ~/.hermes structure for opencode consistency
 # All agents load from this shared store, enabling seamless behavior between:
 #   1. Hermes session (opencode tool)  

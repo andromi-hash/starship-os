@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Agnetic Starship OS — ISO Builder
-# Builds a bootable Ubuntu-based ISO with Agnetic OS pre-installed.
+# Starship OS — ISO Builder
+# Builds a bootable Ubuntu-based ISO with Starship OS pre-installed.
 # Must run on Ubuntu 24.04+ with root access.
 set -euo pipefail
 
@@ -25,7 +25,7 @@ VERSION=$(grep "^Version:" "$REPO_DIR/debian/DEBIAN/control" | awk '{print $2}')
 ISO_NAME="agnet-os-${VERSION}-amd64"
 
 echo -e "${BLUE}╔══════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║  Agnetic Starship OS — ISO Builder          ║${NC}"
+echo -e "${BLUE}║  Starship OS — ISO Builder          ║${NC}"
 echo -e "${BLUE}╚══════════════════════════════════════════════╝${NC}"
 echo ""
 
@@ -49,9 +49,9 @@ lb config \
     --archive-areas "main restricted universe multiverse" \
     --bootloaders "grub-efi,bios" \
     --binary-images iso-hybrid \
-    --iso-application "Agnetic Starship OS" \
-    --iso-publisher "Agnetic Starship OS; https://github.com/andromi-hash/agnetic-os" \
-    --iso-volume "Agnetic OS ${VERSION}" \
+    --iso-application "Starship OS" \
+    --iso-publisher "Starship OS; https://github.com/andromi-hash/starship-os" \
+    --iso-volume "Starship OS ${VERSION}" \
     --apt-recommends true \
     --memtest none \
     --security true \
@@ -71,8 +71,8 @@ cp "$ISO_DIR/config/hooks/0100-agnetic-install.chroot" \
 # Make hook executable
 chmod +x "$LB_DIR/config/hooks/live/0100-agnetic-install.chroot"
 
-# ─── 4. Copy Agnetic OS files into chroot ──────────────────────────
-log "Copying Agnetic OS files into ISO..."
+# ─── 4. Copy Starship OS files into chroot ──────────────────────────
+log "Copying Starship OS files into ISO..."
 
 # Create the installation directory in chroot
 mkdir -p "$LB_DIR/config/includes.chroot/opt/starship/bin"
@@ -132,7 +132,7 @@ echo -e "${BLUE}═════════════════════�
 echo ""
 echo -e "  ISO:      $OUTPUT_DIR/${ISO_NAME}.iso"
 echo -e "  Boot:     UEFI + Legacy BIOS"
-echo -e "  Desktop:  Ubuntu minimal + Agnetic OS"
+echo -e "  Desktop:  Ubuntu minimal + Starship OS"
 echo -e "  Services: NATS, StarAgent, 3 agents, dashboard"
 echo ""
 echo -e "  Flash:    sudo dd if=$OUTPUT_DIR/${ISO_NAME}.iso of=/dev/sdX bs=4M status=progress"

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Agnetic OS — Cognitive Planning Layer (ReAct Pattern)
+Starship OS — Cognitive Planning Layer (ReAct Pattern)
 
 Adds explicit reasoning and planning before action. Implements the
 ReAct (Reason + Act) pattern: the model produces structured Thought →
@@ -1245,7 +1245,7 @@ def _print_plan(plan: Plan):
 
 def cmd_help():
     print("""\
-Agnetic OS Cognitive Planning Layer (ReAct Pattern)
+Starship OS Cognitive Planning Layer (ReAct Pattern)
 
 Usage:
   python3 planner.py <command> [args]

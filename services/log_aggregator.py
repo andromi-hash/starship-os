@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Agnetic OS — Central Log Aggregation Service
+Starship OS — Central Log Aggregation Service
 
 Subscribes to NATS agnetic.logs.>, stores structured log entries in SQLite,
 and exposes a query CLI and importable search/tail/stats API.

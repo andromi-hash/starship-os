@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Agnetic OS Agent Daemon
+Starship OS Agent Daemon
 
 Subscribes to NATS command subjects for a given agent role,
 processes commands via Ollama API, and publishes responses back.
@@ -276,7 +276,7 @@ async def process_command(agent_name, config, subject, payload, telemetry=None, 
     
     operational_context = (
         f"\n\n## Operational Context\n"
-        f"You are connected via the Agnetic OS NATS agent bus.\n"
+        f"You are connected via the Starship OS NATS agent bus.\n"
         f"{telemetry_context}"
         f"Current timestamp: {datetime.now().isoformat()}"
     )
@@ -289,7 +289,7 @@ async def process_command(agent_name, config, subject, payload, telemetry=None, 
         )
     else:
         system_prompt = (
-            f"You are {agent_name}, the {role} in the Agnetic OS agent mesh.\n"
+            f"You are {agent_name}, the {role} in the Starship OS agent mesh.\n"
             f"Your capabilities: {', '.join(capabilities) if capabilities else 'general assistance'}.\n"
             f"You operate via the NATS agent bus. Respond concisely and accurately.\n"
             f"{skill_block}"
@@ -309,15 +309,17 @@ async def process_command(agent_name, config, subject, payload, telemetry=None, 
 
 async def run_agent(agent_name, model_override=None):
     """Main agent daemon loop."""
+    from nats_subjects import dual, dual_publish, agent_command, agent_status, agent_event, telemetry
+
     config = load_agent_config(agent_name)
     model = model_override or config.get("model", "qwen2.5:7b")
     nats_config = config.get("nats", {})
-    cmd_subject = nats_config.get("subjects", {}).get("command", f"agnetic.agent.{agent_name}.command.>")
-    status_subject = nats_config.get("subjects", {}).get("status", f"agnetic.agent.{agent_name}.status")
-    event_subject = nats_config.get("subjects", {}).get("event", f"agnetic.agent.{agent_name}.event.>")
+    cmd_subject = nats_config.get("subjects", {}).get("command", agent_command(agent_name))
+    status_subject = nats_config.get("subjects", {}).get("status", agent_status(agent_name))
+    event_subject = nats_config.get("subjects", {}).get("event", agent_event(agent_name))
     
     log.info("Starting agent '%s' (model=%s, nats=%s)", agent_name, model, NATS_URL)
-    log.info("  Command subject: %s", cmd_subject)
+    log.info("  Command subjects: %s", dual(cmd_subject))
     
     # Ensure model is available before connecting to NATS
     await ensure_model(model)
@@ -329,16 +331,18 @@ async def run_agent(agent_name, model_override=None):
         nc = await nats_connect(NATS_URL)
         log.info("Connected to NATS: %s", NATS_URL)
         
-        await nc.publish(status_subject, json.dumps({
+        await dual_publish(nc, status_subject, json.dumps({
             "agent": agent_name,
             "status": "online",
             "model": model,
             "timestamp": datetime.now().isoformat(),
         }).encode())
         
-        # Subscribe to telemetry for live system context
+        # Subscribe to telemetry for live system context (both prefixes)
         telemetry_cache = {}
-        telemetry_subjects = ["agnetic.telemetry.>", "agnetic.telemetry"]
+        telemetry_subjects = dual(telemetry()) + dual("starship.telemetry")
+        # de-dupe
+        telemetry_subjects = list(dict.fromkeys(telemetry_subjects))
         telemetry_tasks = []
         
         async def update_telemetry(msg):
@@ -346,9 +350,9 @@ async def run_agent(agent_name, model_override=None):
                 data = json.loads(msg.data.decode())
                 parts = msg.subject.split(".")
                 if len(parts) >= 3:
-                    key = parts[-1]  # e.g., "cpu" from "agnetic.telemetry.cpu"
+                    key = parts[-1]  # e.g., "cpu" from "*.telemetry.cpu"
                 else:
-                    key = "full"  # flat "agnetic.telemetry" -> store as "full"
+                    key = "full"
                 telemetry_cache[key] = data
                 telemetry_cache["_timestamp"] = datetime.now().isoformat()
             except (json.JSONDecodeError, IndexError):
@@ -360,9 +364,12 @@ async def run_agent(agent_name, model_override=None):
             task = asyncio.create_task(_consume_msgs(sub, update_telemetry))
             telemetry_tasks.append(task)
         
-        # Subscribe to commands
-        sub = await nc.subscribe(cmd_subject)
-        log.info("Subscribed to: %s", cmd_subject)
+        # Subscribe to commands on both starship.* and agnetic.*
+        cmd_subs = []
+        for cs in dual(cmd_subject):
+            sub = await nc.subscribe(cs)
+            log.info("Subscribed to: %s", cs)
+            cmd_subs.append(sub)
         
         async def handle_msg(msg):
             subject = msg.subject
@@ -370,8 +377,7 @@ async def run_agent(agent_name, model_override=None):
                 data = json.loads(msg.data.decode())
                 log.info("Received command on %s", subject)
                 
-                reply_subject = f"agnetic.agent.{agent_name}.status"
-                await nc.publish(reply_subject, json.dumps({
+                await dual_publish(nc, status_subject, json.dumps({
                     "agent": agent_name,
                     "status": "processing",
                     "command": data.get("command", ""),
@@ -388,10 +394,10 @@ async def run_agent(agent_name, model_override=None):
                     "response": response,
                     "timestamp": datetime.now().isoformat(),
                 }).encode()
-                await nc.publish(status_subject, status_payload)
+                await dual_publish(nc, status_subject, status_payload)
                 reply_to = data.get("reply_to", "")
                 if reply_to:
-                    await nc.publish(reply_to, status_payload)
+                    await dual_publish(nc, reply_to, status_payload)
                 
                 # If the message had a reply subject (NATS request-reply), respond directly
                 if msg.reply:
@@ -409,12 +415,14 @@ async def run_agent(agent_name, model_override=None):
                 if msg.reply:
                     await nc.publish(msg.reply, json.dumps({"error": str(e)}).encode())
         
-        # Process messages
+        # Process messages from all dual-prefix command subscriptions
         await nc.flush()
-        
+        cmd_tasks = [
+            asyncio.create_task(_consume_msgs(sub, handle_msg))
+            for sub in cmd_subs
+        ]
         try:
-            async for msg in sub.messages:
-                await handle_msg(msg)
+            await asyncio.gather(*cmd_tasks)
         except asyncio.CancelledError:
             pass
             
@@ -424,7 +432,8 @@ async def run_agent(agent_name, model_override=None):
     except KeyboardInterrupt:
         log.info("Shutting down...")
         if 'nc' in locals():
-            await nc.publish(status_subject, json.dumps({
+            from nats_subjects import dual_publish as _dp
+            await _dp(nc, status_subject, json.dumps({
                 "agent": agent_name,
                 "status": "offline",
                 "timestamp": datetime.now().isoformat(),
@@ -432,6 +441,9 @@ async def run_agent(agent_name, model_override=None):
             await nc.close()
         if 'telemetry_tasks' in locals():
             for t in telemetry_tasks:
+                t.cancel()
+        if 'cmd_tasks' in locals():
+            for t in cmd_tasks:
                 t.cancel()
     except Exception as e:
         log.error("Fatal error: %s", e)

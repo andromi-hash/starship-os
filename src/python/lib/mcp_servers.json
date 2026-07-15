@@ -1,6 +1,6 @@
 {
   "$schema": "https://spec.modelcontextprotocol.io/schema/2025/servers.json",
-  "description": "MCP server configuration for Agnetic OS agents. Add stdio or HTTP MCP servers here.",
+  "description": "MCP server configuration for Starship OS agents. Add stdio or HTTP MCP servers here.",
   "servers": {
     "example-filesystem": {
       "name": "filesystem",

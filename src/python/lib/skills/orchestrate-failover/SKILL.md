@@ -1,6 +1,6 @@
 # Orchestrate Failover
 
-Enterprise-grade failover orchestration for Agnetic Starship cluster.
+Enterprise-grade failover orchestration for Starship OS cluster.
 
 ## Capabilities
 - Detect node/agent failures via telemetry and NATS heartbeats

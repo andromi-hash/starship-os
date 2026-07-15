@@ -1,6 +1,6 @@
-# Agnetic OS Plugin Developer Guide
+# Starship OS Plugin Developer Guide
 
-Complete guide to building, testing, and publishing plugins for Agnetic OS.
+Complete guide to building, testing, and publishing plugins for Starship OS.
 
 ---
 
@@ -24,7 +24,7 @@ Complete guide to building, testing, and publishing plugins for Agnetic OS.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        Agnetic OS                               │
+│                        Starship OS                               │
 │                                                                 │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐       │
 │  │  Agent:   │  │  Agent:   │  │  Agent:   │  │  Agent:   │      │
@@ -115,7 +115,7 @@ EOF
 # Step 3: Create the entry point
 cat > plugins/hello-world/__init__.py << 'PYEOF'
 def say_hello(name: str, **kwargs) -> str:
-    return f"Hello, {name}! Welcome to Agnetic OS."
+    return f"Hello, {name}! Welcome to Starship OS."
 
 tools = {"say_hello": say_hello}
 PYEOF
@@ -139,7 +139,7 @@ version: 1.0.0                   # semver
 description: "What this plugin does"
 author: "Your Name"
 license: MIT                     # SPDX identifier
-min_version: 0.2.0               # minimum Agnetic OS version
+min_version: 0.2.0               # minimum Starship OS version
 homepage: "https://example.com"  # optional link
 
 # ── Capabilities ──────────────────────────────────────────────────
@@ -200,7 +200,7 @@ config:
 | `description` | string | yes | Human-readable description |
 | `author` | string | yes | Author name |
 | `license` | string | no | SPDX license (default: MIT) |
-| `min_version` | string | no | Minimum Agnetic OS version |
+| `min_version` | string | no | Minimum Starship OS version |
 | `homepage` | string | no | Plugin homepage URL |
 | `provides.tools` | list | no | Tool definitions |
 | `provides.skills` | list | no | Skill names |
@@ -659,7 +659,7 @@ config:
 
 **__init__.py:**
 ```python
-"""GitHub integration plugin for Agnetic OS."""
+"""GitHub integration plugin for Starship OS."""
 
 import json
 import os
@@ -839,7 +839,7 @@ config:
 
 **__init__.py:**
 ```python
-"""Docker container management plugin for Agnetic OS."""
+"""Docker container management plugin for Starship OS."""
 
 import json
 import os

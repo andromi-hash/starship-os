@@ -1,5 +1,5 @@
 #!/bin/bash
-# Agnetic OS - Start all agents
+# Starship OS - Start all agents
 # Run this on boot to start the agent mesh
 
 set -e
@@ -7,7 +7,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-echo "=== Agnetic OS Agent Mesh ==="
+echo "=== Starship OS Agent Mesh ==="
 echo ""
 
 # 1. Ensure NATS is running

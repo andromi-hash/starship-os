@@ -1,6 +1,6 @@
 # Security Architecture
 
-Agnetic OS implements defense-in-depth security across all layers.
+Starship OS implements defense-in-depth security across all layers.
 
 ## Sandboxed Tool Execution
 

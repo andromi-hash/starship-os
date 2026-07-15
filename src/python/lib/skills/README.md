@@ -1,6 +1,6 @@
 # Skills System
 
-Skills are reusable capability modules for Agnetic OS agents. Each skill is a
+Skills are reusable capability modules for Starship OS agents. Each skill is a
 Markdown file in `skills/<name>/SKILL.md` that defines:
 
 1. **Trigger** — NATS subject pattern or scheduled time

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Agnetic OS — Human-in-the-Loop (HITL) Approval System
+Starship OS — Human-in-the-Loop (HITL) Approval System
 
 Gates high-stakes agent actions behind human approval. When an agent tries
 to perform a dangerous operation, the system pauses and waits for explicit

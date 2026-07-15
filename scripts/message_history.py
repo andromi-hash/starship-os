@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""JetStream message history consumer for Agnetic OS.
+"""JetStream message history consumer for Starship OS.
 Stores agent messages for search and replay."""
 
 import json

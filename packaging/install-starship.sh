@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # ─────────────────────────────────────────────────────────────────────
-# Agnetic OS — Universal Installer
+# Starship OS — Universal Installer
 # "Installs on any hardware, feels warm and powerful"
 # ─────────────────────────────────────────────────────────────────────
 
@@ -106,7 +106,7 @@ header "System Service"
 if [ -d /etc/systemd/system ]; then
     cat > /tmp/agnetic-core.service << 'EOF'
 [Unit]
-Description=Agnetic OS Core Agent
+Description=Starship OS Core Agent
 After=network-online.target
 Wants=network-online.target
 
@@ -126,7 +126,7 @@ WantedBy=multi-user.target
 EOF
     cat > /tmp/agnetic-dashboard.service << 'EOF'
 [Unit]
-Description=Agnetic OS Dashboard
+Description=Starship OS Dashboard
 After=network-online.target
 
 [Service]
@@ -203,7 +203,7 @@ echo ""
 cat > /usr/local/bin/agnetic-health << 'HEAL'
 #!/usr/bin/env bash
 echo "╔══════════════════════════════════════╗"
-echo "║  Agnetic OS — System Health Check    ║"
+echo "║  Starship OS — System Health Check    ║"
 echo "╚══════════════════════════════════════╝"
 echo ""
 for svc in ollama agnetic-core agnetic-dashboard; do

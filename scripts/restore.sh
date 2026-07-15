@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Agnetic OS — Restore Script
+# Starship OS — Restore Script
 # Restores system state from a backup archive.
 set -euo pipefail
 
@@ -65,7 +65,7 @@ fi
 # ─── List backups ─────────────────────────────────────────────────────
 list_backups() {
     echo -e "${BLUE}╔══════════════════════════════════════════════╗${NC}"
-    echo -e "${BLUE}║  Agnetic OS — Available Backups              ║${NC}"
+    echo -e "${BLUE}║  Starship OS — Available Backups              ║${NC}"
     echo -e "${BLUE}╚══════════════════════════════════════════════╝${NC}"
     echo ""
 
@@ -191,7 +191,7 @@ restore_backup() {
 
     # Confirm with user
     echo ""
-    echo -e "${YELLOW}WARNING: This will overwrite current Agnetic OS configuration.${NC}"
+    echo -e "${YELLOW}WARNING: This will overwrite current Starship OS configuration.${NC}"
     echo -e "${YELLOW}A pre-restore backup will be created automatically.${NC}"
     echo ""
     read -p "Proceed with restore? [y/N] " -n 1 -r
@@ -210,7 +210,7 @@ restore_backup() {
         warn "Could not create full safety backup (some dirs may not exist)"
 
     # Stop agents before restoring
-    log "Stopping Agnetic OS services..."
+    log "Stopping Starship OS services..."
     if [[ -f "$REPO_DIR/scripts/start-agents.sh" ]]; then
         # Try graceful shutdown
         pkill -f "run_agent.sh" 2>/dev/null || true
@@ -313,7 +313,7 @@ restore_backup() {
     fi
 
     # Restart agents
-    log "Restarting Agnetic OS services..."
+    log "Restarting Starship OS services..."
     if [[ -f "$REPO_DIR/scripts/start-agents.sh" ]]; then
         bash "$REPO_DIR/scripts/start-agents.sh" &>/dev/null || \
             warn "  Some services may need manual restart"

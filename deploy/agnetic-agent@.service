@@ -1,5 +1,5 @@
 [Unit]
-Description=Agnetic OS Agent (%I)
+Description=Starship OS Agent (%I)
 After=nats.service staragent.service
 Requires=nats.service
 PartOf=agnetic-agent-mesh.target

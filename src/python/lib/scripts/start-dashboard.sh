@@ -1,5 +1,5 @@
 #!/bin/bash
-# Agnetic OS Dashboard Launcher
+# Starship OS Dashboard Launcher
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -7,7 +7,7 @@ PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 LOG_DIR="$PROJECT_DIR/logs"
 mkdir -p "$LOG_DIR"
 
-echo "=== Agnetic OS Dashboard ==="
+echo "=== Starship OS Dashboard ==="
 
 # 1. Status bridge (NATS -> JSON file)
 echo "[1/2] Starting status bridge..."

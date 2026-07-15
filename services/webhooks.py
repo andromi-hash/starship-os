@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Agnetic OS — Webhook Receiver & Cron Scheduler
+Starship OS — Webhook Receiver & Cron Scheduler
 
 HTTP webhook receiver with GitHub HMAC verification, generic JSON routing,
 built-in cron scheduler, and NATS integration for agent dispatch.

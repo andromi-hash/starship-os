@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Agnetic OS — Log File Collector / Tailer
+Starship OS — Log File Collector / Tailer
 
 Tails log files from the project logs/ directory and /var/log/agnetic/,
 parses each line, deduplicates identical messages within a 5 s window,

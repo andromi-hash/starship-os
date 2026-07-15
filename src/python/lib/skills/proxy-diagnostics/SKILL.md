@@ -1,6 +1,6 @@
 # Proxy Diagnostics
 
-System diagnostic and troubleshooting workflows for the Agnetic OS.
+System diagnostic and troubleshooting workflows for the Starship OS.
 
 ## Capabilities
 

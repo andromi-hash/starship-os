@@ -140,7 +140,7 @@ var agentChatCmd = &cobra.Command{
 				break
 			}
 
-			subject := fmt.Sprintf("agnetic.agent.%s.command.chat", name)
+			subject := primarySubject("agent", name, "command", "chat")
 			msg := fmt.Sprintf(`{"command":"%s","args":{}}`, line)
 
 			if err := nc.PublishRequest(subject, inbox, []byte(msg)); err != nil {
@@ -187,14 +187,16 @@ var agentSendCmd = &cobra.Command{
 		}
 		defer nc.Close()
 
-		subject := fmt.Sprintf("agnetic.agent.%s.command.%s", name, strings.ReplaceAll(command, " ", "."))
+		subject := primarySubject("agent", name, "command", strings.ReplaceAll(command, " ", "."))
 		msg := fmt.Sprintf(`{"command":"%s","args":%s}`, command, payload)
-
-		if err := nc.Publish(subject, []byte(msg)); err != nil {
-			fmt.Printf("Publish failed: %v\n", err)
-			return
+		payloadBytes := []byte(msg)
+		for _, subj := range dualSubjects(subject) {
+			if err := nc.Publish(subj, payloadBytes); err != nil {
+				fmt.Printf("Publish failed on %s: %v\n", subj, err)
+				return
+			}
 		}
-		fmt.Printf("Sent command '%s' to agent '%s' on %s\n", command, name, subject)
+		fmt.Printf("Sent command '%s' to agent '%s' on %s (+ agnetic.* dual)\n", command, name, subject)
 	},
 }
 

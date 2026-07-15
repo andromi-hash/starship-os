@@ -1,5 +1,5 @@
 """
-Agnetic OS — Long-Term Memory System
+Starship OS — Long-Term Memory System
 
 Persists agent knowledge across sessions. Stores decisions, user preferences,
 conversation history, and learned facts with semantic search retrieval.
@@ -600,7 +600,7 @@ def api_stats() -> dict:
 def _cli() -> None:
     parser = argparse.ArgumentParser(
         prog="memory",
-        description="Agnetic OS Long-Term Memory Manager",
+        description="Starship OS Long-Term Memory Manager",
     )
     sub = parser.add_subparsers(dest="command")
 

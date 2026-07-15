@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Agnetic OS — Backup Script
+# Starship OS — Backup Script
 # Creates a timestamped backup archive of all system state.
 set -euo pipefail
 
@@ -34,7 +34,7 @@ mkdir -p "$BACKUP_BASE" || err "Cannot create backup directory $BACKUP_BASE"
 mkdir -p "$STAGING_DIR"
 
 echo -e "${GREEN}╔══════════════════════════════════════════════╗${NC}"
-echo -e "${GREEN}║  Agnetic OS — System Backup                  ║${NC}"
+echo -e "${GREEN}║  Starship OS — System Backup                  ║${NC}"
 echo -e "${GREEN}╚══════════════════════════════════════════════╝${NC}"
 echo ""
 

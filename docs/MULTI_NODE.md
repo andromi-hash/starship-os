@@ -1,6 +1,6 @@
 # Multi-Node Agent System
 
-Running Agnetic OS agents across multiple machines connected via NATS.
+Running Starship OS agents across multiple machines connected via NATS.
 
 ## Architecture
 
@@ -65,7 +65,7 @@ agnetic.cluster.discovery.request — on-demand discovery queries
 
 - NATS server running (single node or cluster)
 - Python 3.10+ with `nats-py` and `pyyaml`
-- Agnetic OS installed on each machine
+- Starship OS installed on each machine
 
 ### Single Machine (Default)
 

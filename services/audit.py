@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Agnetic OS — Structured Audit Trail System
+Starship OS — Structured Audit Trail System
 
 Every action an agent takes is logged with enough context to reconstruct
 what happened and why. Provides SQLite storage, search, stats, export,
@@ -889,7 +889,7 @@ def main():
     _get_db()
 
     parser = argparse.ArgumentParser(
-        description="Agnetic OS — Audit Trail",
+        description="Starship OS — Audit Trail",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     sub = parser.add_subparsers(dest="command")

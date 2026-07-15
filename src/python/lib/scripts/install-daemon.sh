@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Agnetic Starship OS — Systemd Daemon Installer
+# Starship OS — Systemd Daemon Installer
 # Installs all components to /opt/agnetic, creates users, enables services.
 # Must run as root.
 set -euo pipefail
@@ -24,7 +24,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_DIR="$(dirname "$SCRIPT_DIR")"
 
 echo -e "${BLUE}╔══════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║  Agnetic Starship OS — Daemon Installer     ║${NC}"
+echo -e "${BLUE}║  Starship OS — Daemon Installer     ║${NC}"
 echo -e "${BLUE}╚══════════════════════════════════════════════╝${NC}"
 echo ""
 
@@ -33,7 +33,7 @@ log "Creating system users..."
 
 if ! id -u agnetic &>/dev/null; then
     useradd --system --no-create-home --shell /usr/sbin/nologin \
-        --comment "Agnetic OS Service Account" agnetic
+        --comment "Starship OS Service Account" agnetic
     log "Created user: agnetic"
 else
     info "User agnetic already exists"

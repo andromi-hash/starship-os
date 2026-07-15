@@ -1,12 +1,12 @@
-# Agnetic OS — Agent Developer Guide
+# Starship OS — Agent Developer Guide
 
-A practical guide for creating, configuring, and testing new AI agents in the Agnetic OS platform.
+A practical guide for creating, configuring, and testing new AI agents in the Starship OS platform.
 
 ---
 
 ## 1. Agent Architecture Overview
 
-Agnetic OS is a bus-oriented system where AI agents operate as first-class OS services. Agents never communicate directly — all interaction flows through NATS subjects.
+Starship OS is a bus-oriented system where AI agents operate as first-class OS services. Agents never communicate directly — all interaction flows through NATS subjects.
 
 ### NATS Communication Pattern
 
@@ -111,7 +111,7 @@ continuous awareness of all network interfaces, connections, and bandwidth usage
 ```markdown
 # Network Watch
 
-Network traffic monitoring and anomaly detection for the Agnetic OS.
+Network traffic monitoring and anomaly detection for the Starship OS.
 
 ## Capabilities
 

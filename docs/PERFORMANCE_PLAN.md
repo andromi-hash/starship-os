@@ -1,4 +1,4 @@
-# Agnetic OS — C++ Performance Layer Plan
+# Starship OS — C++ Performance Layer Plan
 
 ## Goal
 Replace Python bottlenecks with native C++ modules for 10-100x speedup on critical hot paths, reducing CPU/GPU/RAM usage while maintaining the same Python API surface.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Agnetic OS — Backup Cron Wrapper
+# Starship OS — Backup Cron Wrapper
 # Runs backup.sh daily, manages retention (7 daily, 4 weekly).
 # Designed to be called from a cron job, e.g.:
 #   0 3 * * * /home/tech/agnetic-os/scripts/backup-cron.sh
@@ -27,7 +27,7 @@ err()  { echo -e "${RED}[$(date '+%Y-%m-%d %H:%M:%S')] ERROR:${NC} $*" | tee -a 
 mkdir -p "$LOG_DIR"
 mkdir -p "$BACKUP_BASE"
 
-log "=== Agnetic OS Backup Cron — Starting ==="
+log "=== Starship OS Backup Cron — Starting ==="
 
 if [[ ! -f "$BACKUP_SCRIPT" ]]; then
     err "Backup script not found: $BACKUP_SCRIPT"
@@ -130,4 +130,4 @@ TOTAL=$(find "$BACKUP_BASE" -maxdepth 1 -name 'agnetic-backup-*.tar.gz' -type f 
 TOTAL_SIZE=$(du -sh "$BACKUP_BASE" 2>/dev/null | cut -f1)
 
 log "Backups on disk: ${TOTAL} (${TOTAL_SIZE})"
-log "=== Agnetic OS Backup Cron — Done ==="
+log "=== Starship OS Backup Cron — Done ==="

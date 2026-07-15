@@ -1,4 +1,4 @@
-# Agnetic OS Architecture
+# Starship OS Architecture
 
 A native AI operating system for complex system control. AI agents are first-class system services communicating via a NATS/JetStream message bus.
 

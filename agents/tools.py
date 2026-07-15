@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Agnetic OS Tool System — sandboxed execution for agents.
+Starship OS Tool System — sandboxed execution for agents.
 
 Borrowed patterns:
 - Hermes Agent: TOOLSETS compositing, tool call auto-repair, callback-driven streaming

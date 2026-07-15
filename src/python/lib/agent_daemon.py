@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Agnetic OS Agent Daemon
+Starship OS Agent Daemon
 
 Subscribes to NATS command subjects for a given agent role,
 processes commands via Ollama API, and publishes responses back.
@@ -462,7 +462,7 @@ async def process_command(agent_name, config, subject, payload, telemetry=None, 
 
     operational_context = (
         f"\n\n## Operational Context\n"
-        f"You are connected via the Agnetic OS NATS agent bus.\n"
+        f"You are connected via the Starship OS NATS agent bus.\n"
         f"{telemetry_context}{memory_context}"
         f"{context_block}"
         f"Current timestamp: {datetime.now().isoformat()}"
@@ -498,7 +498,7 @@ async def process_command(agent_name, config, subject, payload, telemetry=None, 
         )
     else:
         system_prompt = (
-            f"You are {agent_name}, the {role} in the Agnetic OS agent mesh.\n"
+            f"You are {agent_name}, the {role} in the Starship OS agent mesh.\n"
             f"Your capabilities: {', '.join(capabilities) if capabilities else 'general assistance'}.\n"
             f"You operate via the NATS agent bus. Respond concisely and accurately.\n"
             f"{skill_block}"

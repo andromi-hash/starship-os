@@ -29,7 +29,7 @@
 2. ~~Docs: plans, architecture, module catalog stubs~~
 3. ~~models.yaml + Eve-V2-Unleashed Modelfile~~
 4. ~~Secret scrub + .gitignore~~
-5. ~~Tag 2.1.0-alpha.1~~ (push pending `gh auth login`)
+5. ~~Tag 2.1.0-alpha.1~~
 
 ## Phase 1 (in progress)
 

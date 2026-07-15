@@ -1,4 +1,4 @@
-# Agnetic OS - Orchestrator Agent
+# Starship OS - Orchestrator Agent
 # Central coordinator that routes tasks to specialized agents
 
 name: orchestrator

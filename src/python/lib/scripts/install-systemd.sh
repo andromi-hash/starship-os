@@ -1,11 +1,11 @@
 #!/bin/bash
-# Install Agnetic OS systemd services
+# Install Starship OS systemd services
 set -e
 
 SERVICES_DIR="/home/tech/agnetic-os/systemd"
 SYSTEMD_DIR="/etc/systemd/system"
 
-echo "=== Installing Agnetic OS Systemd Services ==="
+echo "=== Installing Starship OS Systemd Services ==="
 echo ""
 
 for svc in agnetic-nats agnetic-staragent agnetic-agents agnetic-dashboard; do

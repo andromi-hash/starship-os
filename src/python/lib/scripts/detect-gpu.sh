@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Agnetic Starship OS — GPU Detection & Ollama Configuration
+# Starship OS — GPU Detection & Ollama Configuration
 # Detects GPU vendor (NVIDIA/AMD/None) and configures Ollama accordingly.
 # Supports: bare metal, WSL2, Proxmox passthrough, Docker.
 set -euo pipefail
@@ -305,7 +305,7 @@ main() {
     case "$cmd" in
         detect)
             echo -e "${BLUE}╔══════════════════════════════════════╗${NC}"
-            echo -e "${BLUE}║  Agnetic Starship OS — GPU Detect   ║${NC}"
+            echo -e "${BLUE}║  Starship OS — GPU Detect   ║${NC}"
             echo -e "${BLUE}╚══════════════════════════════════════╝${NC}"
             echo ""
 

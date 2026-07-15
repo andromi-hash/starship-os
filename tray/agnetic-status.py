@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Agnetic OS Status Bridge — feeds agent/telemetry data to all UI layers."""
+"""Starship OS Status Bridge — feeds agent/telemetry data to all UI layers."""
 
 import sys
 import os
@@ -68,14 +68,17 @@ async def main():
         except Exception as e:
             log.warning("Telemetry parse error: %s", e)
 
+    # Dual-subscribe starship.* (primary) + agnetic.* (legacy)
     for agent in AGENTS:
-        await nc.subscribe(f"agnetic.agent.{agent}.status", cb=on_agent_status)
+        for prefix in ("starship", "agnetic"):
+            await nc.subscribe(f"{prefix}.agent.{agent}.status", cb=on_agent_status)
 
-    await nc.subscribe("agnetic.telemetry", cb=on_telemetry)
-    await nc.subscribe("agnetic.telemetry.cpu", cb=on_telemetry)
-    await nc.subscribe("agnetic.telemetry.mem", cb=on_telemetry)
+    for prefix in ("starship", "agnetic"):
+        await nc.subscribe(f"{prefix}.telemetry", cb=on_telemetry)
+        await nc.subscribe(f"{prefix}.telemetry.cpu", cb=on_telemetry)
+        await nc.subscribe(f"{prefix}.telemetry.mem", cb=on_telemetry)
 
-    log.info("Subscribed to agent status + telemetry. Writing to %s", STATUS_FILE)
+    log.info("Subscribed to agent status + telemetry (dual prefix). Writing to %s", STATUS_FILE)
 
     stop = asyncio.Future()
 

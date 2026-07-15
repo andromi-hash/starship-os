@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Agnetic OS Watchdog Service
+Starship OS Watchdog Service
 
-Health check and auto-restart watchdog for all Agnetic OS services.
+Health check and auto-restart watchdog for all Starship OS services.
 
 Usage:
     python3 watchdog.py           # Run as daemon

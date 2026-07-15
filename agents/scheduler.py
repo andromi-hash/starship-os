@@ -1,4 +1,4 @@
-"""Scheduled tasks engine for Agnetic OS.
+"""Scheduled tasks engine for Starship OS.
 Reads agent config and triggers workflows on cron schedule."""
 
 import json

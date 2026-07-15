@@ -1,6 +1,6 @@
 # Ergo Automation
 
-Scheduled tasks and event-driven workflows for the Agnetic OS.
+Scheduled tasks and event-driven workflows for the Starship OS.
 
 ## Capabilities
 

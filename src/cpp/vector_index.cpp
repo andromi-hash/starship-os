@@ -99,7 +99,7 @@ public:
 };
 
 PYBIND11_MODULE(vector_index, m) {
-    m.doc() = "Agnetic OS C++ Vector Processor — fast embedding normalization and pooling";
+    m.doc() = "Starship OS C++ Vector Processor — fast embedding normalization and pooling";
 
     py::class_<EmbeddingProcessor>(m, "EmbeddingProcessor")
         .def_static("normalize", &EmbeddingProcessor::normalize,

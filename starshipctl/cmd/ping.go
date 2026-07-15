@@ -19,13 +19,15 @@ var pingCmd = &cobra.Command{
 		}
 		defer nc.Close()
 
-		err = nc.Publish("agnetic.agent.proxy.status", []byte(`{"status":"ok","agent":"cli"}`))
-		if err != nil {
-			fmt.Printf("Publish failed: %v\n", err)
-			return
+		payload := []byte(`{"status":"ok","agent":"cli"}`)
+		for _, subj := range dualSubjects(primarySubject("agent", "proxy", "status")) {
+			if err = nc.Publish(subj, payload); err != nil {
+				fmt.Printf("Publish failed on %s: %v\n", subj, err)
+				return
+			}
 		}
 
-		fmt.Println("NATS bus OK — connected and published status message")
+		fmt.Println("NATS bus OK — dual-published to starship.* + agnetic.*")
 	},
 }
 

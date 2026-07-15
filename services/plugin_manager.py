@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Agnetic OS Plugin Manager
+Starship OS Plugin Manager
 
 Core plugin system that enables third parties to extend agents with new tools,
 skills, webhook handlers, and NATS integrations.
@@ -153,7 +153,7 @@ class AgentPluginConfig:
 # ---------------------------------------------------------------------------
 
 class PluginManager:
-    """Core plugin management system for Agnetic OS."""
+    """Core plugin management system for Starship OS."""
 
     def __init__(self, config_path: Path | str | None = None):
         self.config_path = Path(config_path) if config_path else CONFIG_PATH
@@ -793,7 +793,7 @@ class PluginManager:
 
     def create_plugin_interactive(self) -> Path | None:
         """Interactive wizard to scaffold a new plugin."""
-        print("\n=== Agnetic OS Plugin Creator ===\n")
+        print("\n=== Starship OS Plugin Creator ===\n")
 
         name = input("Plugin name: ").strip()
         if not name:
@@ -1112,7 +1112,7 @@ def cmd_load(manager: PluginManager, args: list[str]) -> None:
 
 def cmd_help() -> None:
     print("""\
-Agnetic OS Plugin Manager
+Starship OS Plugin Manager
 
 Usage:
   python3 plugin_manager.py <command> [args]

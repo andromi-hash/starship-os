@@ -1,5 +1,5 @@
 #!/bin/bash
-# Agnetic OS — Start all services
+# Starship OS — Start all services
 # Starts NATS, telemetry, scheduler, API server, workflow engine, and all agents.
 set -e
 
@@ -13,7 +13,7 @@ NATS_URL="${NATS_URL:-nats://127.0.0.1:4222}"
 
 mkdir -p "$LOG_DIR"
 
-echo "=== Agnetic OS Startup ==="
+echo "=== Starship OS Startup ==="
 echo "Root: $AGNETIC_ROOT"
 echo ""
 

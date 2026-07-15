@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Agnetic OS Security — NATS auth, encrypted config, secrets management.
+Starship OS Security — NATS auth, encrypted config, secrets management.
 
 Provides:
 - Per-agent NATS tokens with subject-level permissions
@@ -124,7 +124,7 @@ def generate_nats_config(tokens=None):
     }}
 """)
 
-    config = f"""# Agnetic OS — NATS Server Configuration (auto-generated)
+    config = f"""# Starship OS — NATS Server Configuration (auto-generated)
 # Generated: {datetime.now().isoformat()}
 # DO NOT EDIT MANUALLY — use generate_nats_config() or security.generate_nats_config()
 

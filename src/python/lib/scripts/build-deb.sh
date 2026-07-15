@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Agnetic Starship OS — Debian Package Builder
+# Starship OS — Debian Package Builder
 # Builds .deb from the repo. Must run from repo root.
 set -euo pipefail
 
@@ -19,7 +19,7 @@ OUTPUT_DIR="$REPO_DIR/dist"
 VERSION=$(grep "^Version:" "$BUILD_DIR/DEBIAN/control" | awk '{print $2}')
 
 echo -e "${BLUE}╔══════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║  Agnetic Starship OS — Debian Builder       ║${NC}"
+echo -e "${BLUE}║  Starship OS — Debian Builder       ║${NC}"
 echo -e "${BLUE}╚══════════════════════════════════════════════╝${NC}"
 echo ""
 

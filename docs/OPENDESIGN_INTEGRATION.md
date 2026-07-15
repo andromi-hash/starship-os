@@ -1,6 +1,6 @@
 # Open Design Integration
 
-Open Design is built into Agnetic OS as a native tool for generating design artifacts — web prototypes, slide decks, mobile mockups, dashboards, and more.
+Open Design is built into Starship OS as a native tool for generating design artifacts — web prototypes, slide decks, mobile mockups, dashboards, and more.
 
 ## How It Works
 
@@ -84,7 +84,7 @@ Each design system is a 9-section `DESIGN.md` covering:
 
 ### Landing page
 ```
-Agent: opendesign("Create a landing page for Agnetic OS with hero section, features grid, and CTA", skill="landing-page", design_system="vercel")
+Agent: opendesign("Create a landing page for Starship OS with hero section, features grid, and CTA", skill="landing-page", design_system="vercel")
 ```
 
 ### Dashboard
@@ -94,12 +94,12 @@ Agent: opendesign("Design a system monitoring dashboard with CPU, memory, disk, 
 
 ### Slide deck
 ```
-Agent: opendesign("Create a 10-slide investor pitch deck for Agnetic OS", skill="slide-deck", design_system="stripe")
+Agent: opendesign("Create a 10-slide investor pitch deck for Starship OS", skill="slide-deck", design_system="stripe")
 ```
 
 ### Mobile app
 ```
-Agent: opendesign("Design a mobile chat interface for the Agnetic OS agent", skill="mobile-app", design_system="notion")
+Agent: opendesign("Design a mobile chat interface for the Starship OS agent", skill="mobile-app", design_system="notion")
 ```
 
 ## Output Formats

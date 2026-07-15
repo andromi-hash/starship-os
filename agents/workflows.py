@@ -1,4 +1,4 @@
-"""Agent-to-agent workflow orchestrator for Agnetic OS.
+"""Agent-to-agent workflow orchestrator for Starship OS.
 Listens for workflow requests and coordinates multi-agent responses."""
 
 import json

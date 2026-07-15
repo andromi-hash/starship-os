@@ -1,5 +1,5 @@
 #!/bin/bash
-# Agnetic OS Agent Launcher
+# Starship OS Agent Launcher
 # Usage: ./run_agent.sh <agent_name> [--model MODEL]
 set -e
 

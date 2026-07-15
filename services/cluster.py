@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Agnetic OS Multi-Node Cluster Service
+Starship OS Multi-Node Cluster Service
 
 NATS-based clustering and node management for running agents across
 multiple machines. Handles node registration, heartbeats, discovery,

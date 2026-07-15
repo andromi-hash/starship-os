@@ -297,7 +297,7 @@ Create `/etc/systemd/system/agnetic-webhooks.service`:
 
 ```ini
 [Unit]
-Description=Agnetic OS Webhook Server
+Description=Starship OS Webhook Server
 After=network.target nats-server.service
 
 [Service]

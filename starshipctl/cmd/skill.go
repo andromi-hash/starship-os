@@ -63,7 +63,8 @@ var skillTriggerCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		name := args[0]
 		fmt.Printf("Triggering skill '%s'... (use 'agnetic workflow run' or NATS pub)\n", name)
-		fmt.Printf("  nats pub agnetic.skill.%s '{}'\n", name)
+		fmt.Printf("  nats pub starship.skill.%s '{}'\n", name)
+		fmt.Printf("  nats pub agnetic.skill.%s '{}'  # legacy\n", name)
 	},
 }
 

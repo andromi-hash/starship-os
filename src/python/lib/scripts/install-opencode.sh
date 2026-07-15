@@ -1,5 +1,5 @@
 #!/bin/bash
-# Install OpenCode for Agnetic OS
+# Install OpenCode for Starship OS
 set -e
 
 INSTALL_DIR="${HOME}/.opencode/bin"

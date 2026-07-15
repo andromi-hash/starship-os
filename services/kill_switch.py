@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Agnetic OS — Kill Switch & Cost Control Service
+Starship OS — Kill Switch & Cost Control Service
 
 Prevents runaway agents from consuming unlimited resources.
 Hard-coded limits that cannot be overridden by agents.

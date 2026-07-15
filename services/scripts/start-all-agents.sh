@@ -1,5 +1,5 @@
 #!/bin/bash
-# Agnetic OS Startup Script v1.0
+# Starship OS Startup Script v1.0
 # 
 # Architecture: Auto-loads ~/.hermes structure + agent skills/memories into all agents
 # Ensures consistency between Hermes (opencode) and native agnetic agents

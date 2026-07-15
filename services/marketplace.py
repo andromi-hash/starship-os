@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Agnetic OS Marketplace Client
+Starship OS Marketplace Client
 
 Multi-source agent skill marketplace with security scanning.
 Discovers, installs, and manages agent skills from Hermes, skills.sh,
@@ -1428,7 +1428,7 @@ def cmd_history(args, marketplace: Marketplace):
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="marketplace",
-        description="Agnetic OS Agent Skill Marketplace",
+        description="Starship OS Agent Skill Marketplace",
     )
     sub = parser.add_subparsers(dest="command", help="Available commands")
 

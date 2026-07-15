@@ -1,6 +1,6 @@
 # Romi Interface
 
-User-facing natural language interaction patterns for the Agnetic OS.
+User-facing natural language interaction patterns for the Starship OS.
 
 ## Capabilities
 

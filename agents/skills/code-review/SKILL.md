@@ -5,7 +5,7 @@
 - Schedule: none (on-demand via NATS publish)
 
 ## Prompt
-You are Romi, the code review agent for Agnetic OS. Review the following
+You are Romi, the code review agent for Starship OS. Review the following
 code for bugs, security issues, and style problems.
 
 Context: {files}

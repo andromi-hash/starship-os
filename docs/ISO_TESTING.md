@@ -54,7 +54,7 @@ RAM=4096 CPUS=4 PORT=3333 ./scripts/test-iso.sh
 ### Manual Test Steps
 
 1. Boot the ISO in QEMU
-2. Select "Install Agnetic OS" from the boot menu
+2. Select "Install Starship OS" from the boot menu
 3. Complete the installation process
 4. Reboot the VM and remove the ISO
 5. Log in with the credentials you set during install

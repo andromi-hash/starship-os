@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Agnetic OS Status Bridge — feeds agent/telemetry data to all UI layers."""
+"""Starship OS Status Bridge — feeds agent/telemetry data to all UI layers."""
 
 import sys
 import os

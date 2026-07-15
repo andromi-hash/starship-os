@@ -2,7 +2,7 @@
   "name": "hello-world",
   "version": "1.0.0",
   "description": "Example plugin demonstrating the Agnetic plugin system. Provides a greeting tool and a time tool.",
-  "author": "Agnetic OS",
+  "author": "Starship OS",
   "enabled": true,
   "config": {
     "default_greeting": "Hello from Agnetic Plugin System!"

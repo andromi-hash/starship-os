@@ -1,8 +1,8 @@
-# Agnetic OS (Starship OS) — Complete System Guide
+# Starship OS (Starship OS) — Complete System Guide
 
 ## What This Is
 
-Agnetic OS is a self-hosted, private AI agent mesh that runs on your own hardware.
+Starship OS is a self-hosted, private AI agent mesh that runs on your own hardware.
 Think of it as an operating system for AI agents — it manages, coordinates, secures,
 and heals a fleet of agents that work for you locally and manages micro agents installed remotly accros an enterprise system.
 

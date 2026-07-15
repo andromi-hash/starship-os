@@ -4,7 +4,7 @@ set -euo pipefail
 PROFILES_DIR="$(cd "$(dirname "$0")/../security/apparmor" && pwd)"
 APPARMOR_DIR="/etc/apparmor.d"
 
-echo "=== Agnetic OS AppArmor Profile Installer ==="
+echo "=== Starship OS AppArmor Profile Installer ==="
 echo "Profiles source: ${PROFILES_DIR}"
 echo "Install target:  ${APPARMOR_DIR}"
 echo ""

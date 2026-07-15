@@ -1,5 +1,5 @@
 #!/bin/bash
-# WSL post-import setup for Agnetic Starship OS
+# WSL post-import setup for Starship OS
 # Run inside the new WSL distro after: wsl --import AgneticOS ...
 
 set -e

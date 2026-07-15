@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Agnetic OS — Structured Agent Handoff System
+Starship OS — Structured Agent Handoff System
 
 Manages delegation chains between agents with structured handoff documents.
 Ensures the receiving agent has all necessary context: task, deliverable,
@@ -1439,7 +1439,7 @@ def cmd_stats(args: list[str]):
 
 def cmd_help():
     print("""\
-Agnetic OS Structured Agent Handoff System
+Starship OS Structured Agent Handoff System
 
 Usage:
   python3 handoff.py <command> [args]

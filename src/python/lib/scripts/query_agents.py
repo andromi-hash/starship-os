@@ -48,7 +48,7 @@ async def main():
     # Romi: testing strategy
     print("\n=== Romi: Testing Strategy ===")
     r = await send_command("romi", 
-        "Review Agnetic OS and our 10 GitHub repos. "
+        "Review Starship OS and our 10 GitHub repos. "
         "We have Python (pygame, automation), TypeScript (React, Vite games), "
         "Node.js CLI tools, Godot games, and static HTML repos. "
         "What test framework should each use? What's the priority order for adding tests? "
@@ -62,7 +62,7 @@ async def main():
         "We just pushed GitHub Actions CI workflows to 8 repos. "
         "What scheduled tasks should we add? Consider: dependency updates (Dependabot/Renovate), "
         "weekly security scans, automatic stale issue closing, release automation. "
-        "Also what system health monitoring should we build into Agnetic OS itself? "
+        "Also what system health monitoring should we build into Starship OS itself? "
         "List specific cron schedules and workflow files.")
     results["ergo"] = r
     print(f"  Response ({len(r)} chars): {r[:300]}...")
@@ -70,7 +70,7 @@ async def main():
     # Proxy: Security
     print("\n=== Proxy: Security (Red+Blue Team) ===")
     r = await send_command("proxy",
-        "RED TEAM: Analyze Agnetic OS for vulnerabilities. Check: "
+        "RED TEAM: Analyze Starship OS for vulnerabilities. Check: "
         "1) GitHub token exposure in git remotes, "
         "2) No .env or secrets in repo, "
         "3) Dependency vulnerabilities in requirements.txt and package.json files, "

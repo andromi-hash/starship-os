@@ -2,7 +2,7 @@
 # agnetic-os prerm — called before package files are removed
 set -e
 
-echo "Stopping Agnetic OS services..."
+echo "Stopping Starship OS services..."
 
 if command -v systemctl &>/dev/null; then
     for unit in agnetic-dashboard agnetic-message-history agnetic-status-bridge \

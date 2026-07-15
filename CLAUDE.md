@@ -1,4 +1,4 @@
-# Agnetic OS
+# Starship OS
 
 A native AI operating system for complex system control. AI agents are first-class system services.
 
@@ -24,8 +24,9 @@ User/Opencode → Hermes Orchestrator
 
 ## Communication
 
-- **NATS/JetStream** bus at `agnetic.agent.{proxy,romi,ergo}.{command,event,status}`
-- **Telemetry** at `agnetic.telemetry.{cpu,mem,disk,net}`
+- **NATS/JetStream** bus at `starship.agent.{proxy,romi,ergo}.{command,event,status}`
+- **Telemetry** at `starship.telemetry.{cpu,mem,disk,net}`
+- Dual-publish also on legacy `agnetic.*` (Alpha 2.0 compat)
 - All agents communicate via NATS subjects; no direct coupling
 
 ## Commands
@@ -41,7 +42,7 @@ User/Opencode → Hermes Orchestrator
 - Configs: YAML in `agents/`
 - Skills: Markdown in `skills/<name>/SKILL.md`
 - Docs: Markdown in `docs/`
-- CLI: Go/Cobra in `cli/`
+- CLI: Go/Cobra in `starshipctl/`
 - Metrics agent: Rust in `agent/`
 - NATS config: `nats/`
 

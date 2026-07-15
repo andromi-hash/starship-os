@@ -57,7 +57,7 @@ async function renderDashboard(area) {
 
     <div class="card">
       <h3>&#9881; System Overview</h3>
-      <p>Agnetic OS v${escapeHtml(health.version)} &middot; ${durationStr(health.uptime_seconds)} uptime &middot; ${agents.total || 0} agents (${agents.online || 0} online, ${agents.busy || 0} busy, ${agents.offline || 0} offline)</p>
+      <p>Starship OS v${escapeHtml(health.version)} &middot; ${durationStr(health.uptime_seconds)} uptime &middot; ${agents.total || 0} agents (${agents.online || 0} online, ${agents.busy || 0} busy, ${agents.offline || 0} offline)</p>
     </div>
 
     <div class="card">

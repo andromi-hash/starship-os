@@ -1,4 +1,4 @@
-"""Agnetic OS Self-Healing System — Autonomous recovery for agents and services.
+"""Starship OS Self-Healing System — Autonomous recovery for agents and services.
 
 Monitors agent health, detects stalls/failures, and triggers recovery actions.
 Pattern: Kubernetes-style liveness + readiness probes adapted for agent mesh."""

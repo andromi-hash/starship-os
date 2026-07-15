@@ -1,5 +1,5 @@
 #!/bin/bash
-# Agnetic OS ISO Test Script
+# Starship OS ISO Test Script
 # Boots the ISO in QEMU and runs automated checks
 
 set -e
@@ -9,7 +9,7 @@ RAM="${RAM:-2048}"
 CPUS="${CPUS:-2}"
 PORT="${PORT:-2222}"
 
-echo "=== Agnetic OS ISO Test ==="
+echo "=== Starship OS ISO Test ==="
 echo "ISO: $ISO"
 echo "RAM: ${RAM}MB, CPUs: $CPUS"
 
@@ -33,7 +33,7 @@ qemu-img create -f qcow2 "$TEST_DISK" 20G 2>/dev/null
 echo ""
 echo "Starting QEMU VM..."
 echo "  - The VM will boot from the ISO"
-echo "  - Watch for 'Agnetic OS' boot menu"
+echo "  - Watch for 'Starship OS' boot menu"
 echo "  - After boot, run: make status"
 echo ""
 

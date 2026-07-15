@@ -1,6 +1,6 @@
 # OpenCode Integration
 
-OpenCode is built into Agnetic OS as a native tool that agents can call to build and expand the OS from inside.
+OpenCode is built into Starship OS as a native tool that agents can call to build and expand the OS from inside.
 
 ## How It Works
 

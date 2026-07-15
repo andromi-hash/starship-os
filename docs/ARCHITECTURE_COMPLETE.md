@@ -1,9 +1,9 @@
-# Agnetic OS — Architecture & Dependency Map
+# Starship OS — Architecture & Dependency Map
 
 > **Author**: Opencode / Agnetic Engineering
 > **Version**: 1.0 (2026-07-09)
-> **Purpose**: Complete reference for developers building on, extending, or deploying Agnetic OS.
-> **Repository**: `https://github.com/andromi-hash/agnetic-os`
+> **Purpose**: Complete reference for developers building on, extending, or deploying Starship OS.
+> **Repository**: `https://github.com/andromi-hash/starship-os`
 
 ---
 

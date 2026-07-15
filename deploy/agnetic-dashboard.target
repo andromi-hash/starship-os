@@ -1,5 +1,5 @@
 [Unit]
-Description=Agnetic OS Dashboard — status bridge + web UI
+Description=Starship OS Dashboard — status bridge + web UI
 After=nats.target
 BindsTo=agnetic-agent-mesh.target
 Wants=agnetic-status-bridge.service agnetic-dashboard-web.service

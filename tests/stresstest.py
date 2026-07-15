@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Agnetic OS Comprehensive Stress Test & System Verification."""
+"""Starship OS Comprehensive Stress Test & System Verification."""
 
 import sys, os, json, time, asyncio, importlib
 sys.path.insert(0, '/opt/agnetic')

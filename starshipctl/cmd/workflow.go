@@ -38,7 +38,7 @@ var workflowRunCmd = &cobra.Command{
 		}
 		nc.Flush()
 
-		subject := fmt.Sprintf("agnetic.workflow.%s", name)
+		subject := primarySubject("workflow", name)
 		msg := fmt.Sprintf(`{"workflow":"%s","payload":%s}`, name, payload)
 
 		if err := nc.PublishRequest(subject, inbox, []byte(msg)); err != nil {
