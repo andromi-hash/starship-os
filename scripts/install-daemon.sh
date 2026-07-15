@@ -163,11 +163,27 @@ cp "$REPO_DIR/scripts/starship-firstboot.sh" /opt/starship/bin/ 2>/dev/null || t
 cp "$REPO_DIR/scripts/select-profile.sh" /opt/starship/bin/ 2>/dev/null || true
 cp "$REPO_DIR/scripts/gen-nats-accounts.sh" /opt/starship/bin/ 2>/dev/null || true
 cp "$REPO_DIR/scripts/gen-nats-tls.sh" /opt/starship/bin/ 2>/dev/null || true
+cp "$REPO_DIR/scripts/install-opencode.sh" /opt/starship/bin/ 2>/dev/null || true
 chmod +x /opt/starship/bin/* 2>/dev/null || true
-mkdir -p /opt/starship/lib/starship/scripts
+mkdir -p /opt/starship/lib/starship/scripts /etc/starship/opencode
 cp "$REPO_DIR/scripts/starship-firstboot.sh" /opt/starship/lib/starship/scripts/ 2>/dev/null || true
 cp "$REPO_DIR/scripts/gen-nats-accounts.sh" /opt/starship/lib/starship/scripts/ 2>/dev/null || true
 cp "$REPO_DIR/scripts/gen-nats-tls.sh" /opt/starship/lib/starship/scripts/ 2>/dev/null || true
+cp "$REPO_DIR/scripts/install-opencode.sh" /opt/starship/lib/starship/scripts/ 2>/dev/null || true
+if [[ -f "$REPO_DIR/config/opencode/oh-my-opencode-slim.starship.json" ]]; then
+  cp "$REPO_DIR/config/opencode/oh-my-opencode-slim.starship.json" \
+     /etc/starship/opencode/oh-my-opencode-slim.json
+fi
+# C11 spikes
+for b in starshipd heald policyexec sandbox_run; do
+  [[ -x /opt/starship/bin/$b ]] || true
+done
+if [[ -x "$REPO_DIR/src/c/starshipd/starshipd" ]]; then
+  cp "$REPO_DIR/src/c/starshipd/starshipd" /opt/starship/bin/
+fi
+if [[ -x "$REPO_DIR/src/c/heald/heald" ]]; then
+  cp "$REPO_DIR/src/c/heald/heald" /opt/starship/bin/
+fi
 
 log "Application code installed"
 

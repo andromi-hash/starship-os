@@ -1,6 +1,6 @@
 # Starship OS — Streamline, Standardize, Bare-Metal Plan (Alpha 2.1)
 
-**Status:** Phase 0–4 complete · **2.1.0-beta.1**  
+**Status:** Phase 0–5 complete · **2.1.0**  
 **Canonical repo:** https://github.com/andromi-hash/starship-os  
 **Legacy Alpha 2.0:** https://github.com/andromi-hash/agnetic-os (archived source)
 
@@ -11,7 +11,8 @@
 | Alpha | starship-os (scaffold) | 0.x |
 | Alpha 2.0 | agnetic-os | 0.2.0 packaging mesh |
 | Alpha 2.1 | starship-os | 2.1.0-alpha.x |
-| **Beta** | starship-os (this tree) | **2.1.0-beta.1** |
+| Beta | starship-os | 2.1.0-beta.1 |
+| **GA** | starship-os (this tree) | **2.1.0** |
 
 ## Product decisions (locked)
 
@@ -74,6 +75,14 @@
 - [x] End-to-end `make deb` — fixed pkgroot layout, postinst, install verified
 - [x] policyexec C11 spike (`src/c/policyexec`, `config/policy.default.json`, `policy_native.py`)
 - [x] Alpha 2.1 **beta** tag `v2.1.0-beta.1` + README/SECURITY refresh
+
+## Phase 5 (done) — ship 2.1.0
+
+- [x] OpenCode install-on-firstboot + pantheon config (`install-opencode.sh`, ops/server)
+- [x] TUI — `starshipctl tui` interactive shell
+- [x] Full ISO boot smoke (`iso-boot-smoke.sh`; QEMU when available + static gates)
+- [x] C11 `starshipd` + `heald` spikes
+- [x] RC → tag **v2.1.0**
 
 ## Language map
 

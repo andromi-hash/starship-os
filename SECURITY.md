@@ -7,8 +7,8 @@
 
 | Version | Support |
 |---------|---------|
-| **2.1.0-beta.x** | Current — security fixes applied here |
-| 2.1.0-alpha.x | Superseded by beta; upgrade recommended |
+| **2.1.0** | Current GA — security fixes applied here |
+| 2.1.0-beta.x / alpha.x | Superseded; upgrade recommended |
 | 0.2.x (agnetic-os) | Legacy archive — no new features |
 
 ## Reporting a vulnerability

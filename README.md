@@ -1,20 +1,20 @@
 # Starship OS
 
 **An AI agent-first operating system built on Ubuntu 24.04 LTS**  
-**Version:** 2.1.0-beta.1 · **Canonical repo:** [andromi-hash/starship-os](https://github.com/andromi-hash/starship-os)
+**Version:** 2.1.0 · **Canonical repo:** [andromi-hash/starship-os](https://github.com/andromi-hash/starship-os)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Platform: Ubuntu 24.04](https://img.shields.io/badge/Platform-Ubuntu%2024.04-orange.svg)](https://ubuntu.com)
 [![NATS/JetStream](https://img.shields.io/badge/Bus-NATS%2FJetStream-green.svg)](https://nats.io)
 [![Ollama GPU](https://img.shields.io/badge/Inference-Ollama%20GPU-red.svg)](https://ollama.com)
-[![Version](https://img.shields.io/badge/version-2.1.0--beta.1-purple.svg)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.1.0-purple.svg)](VERSION)
 [![Security](https://img.shields.io/badge/Security-Policy-red.svg)](SECURITY.md)
 
 Starship OS is a local-first, AI-native OS layer where autonomous agents communicate over NATS/JetStream, execute tools in a sandboxed environment, and present a real-time command-and-control dashboard. No cloud required. Everything runs on your hardware.
 
 **Lineage:** Alpha scaffold → Alpha 2.0 ([agnetic-os](https://github.com/andromi-hash/agnetic-os) archive) → **Alpha 2.1 / Beta** (this monorepo).
 
-### 2.1 beta highlights
+### 2.1.0 highlights
 
 - **Install roots:** `/opt/starship`, `/etc/starship` (legacy `/opt/agnetic` symlinks)
 - **CLI:** `starshipctl` (compat `agneticctl`) · **Dashboard:** `:8788`
@@ -355,6 +355,8 @@ Supports NVIDIA (CUDA), AMD (ROCm), and CPU-only configurations. Automatically c
 |--------|-------------|
 | `make dev` / `stop` / `status` | Dev mesh lifecycle |
 | `make smoke` | Full smoke suite |
+| `make c11` | Build/test all C11 spikes |
+| `make iso-boot` | ISO static + optional QEMU probe |
 | `make build` / `build-agent` | Go CLI + Rust StarAgent |
 | `make sandbox` / `policyexec` / `bench` | C11 isolation + policy + timing |
 | `make deb` / `install` | Package / system install |

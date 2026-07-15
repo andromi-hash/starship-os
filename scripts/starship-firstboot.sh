@@ -298,7 +298,42 @@ if command -v systemctl &>/dev/null; then
   systemctl try-restart starship-fleet.service 2>/dev/null || true
 fi
 
+# 6) OpenCode + pantheon config (server/ops; skip edge unless forced)
+if [[ "$PROFILE" == "ops" || "$PROFILE" == "server" || "${STARSHIP_INSTALL_OPENCODE:-}" == "1" ]]; then
+  echo "OpenCode: installing pantheon preset..."
+  OC_INSTALL=""
+  for p in \
+    "$REPO_DIR/scripts/install-opencode.sh" \
+    /opt/starship/bin/install-opencode.sh \
+    /opt/starship/lib/starship/scripts/install-opencode.sh; do
+    if [[ -f "$p" ]]; then OC_INSTALL="$p"; break; fi
+  done
+  if [[ -n "$OC_INSTALL" ]]; then
+    bash "$OC_INSTALL" || echo "warn: OpenCode install failed (npm/network optional)"
+  else
+    # At least install pantheon config
+    mkdir -p /etc/starship/opencode
+    for cfg in \
+      "$REPO_DIR/config/opencode/oh-my-opencode-slim.starship.json" \
+      /opt/starship/etc/opencode/oh-my-opencode-slim.starship.json; do
+      if [[ -f "$cfg" ]]; then
+        cp "$cfg" /etc/starship/opencode/oh-my-opencode-slim.json
+        echo "  pantheon config → /etc/starship/opencode/oh-my-opencode-slim.json"
+        break
+      fi
+    done
+  fi
+  # Red-team never gets OpenCode unrestricted — document policy
+  cat > /etc/starship/opencode/POLICY.md <<'OCPOL'
+# OpenCode policy (Starship OS)
+- OpenCode pantheon is for coding/ops agents only.
+- Red-team fleet roles must not receive unrestricted OpenCode (fleet_policy).
+- Config: /etc/starship/opencode/oh-my-opencode-slim.json
+OCPOL
+fi
+
 NATS_MODE=$(grep -E '^STARSHIP_NATS_MODE=' /etc/starship/nats.env 2>/dev/null | cut -d= -f2 || echo agent)
 echo "Firstboot complete. Dashboard: http://localhost:8788"
-echo "CLI: starshipctl fleet status"
+echo "CLI: starshipctl tui  |  starshipctl fleet status"
 echo "NATS: mode=${NATS_MODE} conf=$(readlink -f /etc/starship/nats/active.conf 2>/dev/null || echo n/a)"
+echo "TUI:  starshipctl tui"
