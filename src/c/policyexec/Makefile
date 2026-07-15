@@ -9,7 +9,7 @@ all: $(TARGET)
 $(TARGET): policyexec.c
 	$(CC) $(CFLAGS) -o $@ $<
 
-POLICY ?= $(abspath $(CURDIR)/../../config/policy.default.json)
+POLICY ?= $(abspath $(CURDIR)/../../../config/policy.default.json)
 
 test: $(TARGET)
 	@echo "== list =="
