@@ -67,7 +67,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Dual-publish: starship.* (primary) + agnetic.* (legacy Alpha 2.0)
         for subject in ["starship.telemetry", "agnetic.telemetry"] {
             let b: bytes::Bytes = payload.clone().into();
-            nc.publish(*subject, b).await?;
+            nc.publish(subject, b).await?;
         }
         nc.flush().await?;
     }
