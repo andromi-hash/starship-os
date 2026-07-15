@@ -472,8 +472,13 @@ body::before{
       <div class="panel-title">Crew Manifest</div>
       <div class="panel-scroll" id="agent-list"></div>
     </div>
-    <div class="glass" style="display:flex;flex-direction:column;flex-shrink:0;max-height:200px">
+    <div class="glass" style="display:flex;flex-direction:column;flex-shrink:0;max-height:240px">
       <div class="panel-title">Fleet Map</div>
+      <div class="fleet-controls" style="display:flex;gap:6px;padding:0 8px 6px;flex-wrap:wrap">
+        <button class="quick-btn" onclick="fleetExercise('start')">Exercise Start</button>
+        <button class="quick-btn" onclick="fleetExercise('stop')">Exercise Stop</button>
+        <button class="quick-btn" onclick="fleetRegister()">Register Node</button>
+      </div>
       <div class="panel-scroll" id="fleet-map" style="max-height:160px"></div>
     </div>
     <div class="glass" style="display:flex;flex-direction:column;flex-shrink:0;max-height:180px">
@@ -595,6 +600,8 @@ body::before{
   <button class="rail-btn accent" onclick="quickAction('ergo','security audit')">Security Audit</button>
   <button class="rail-btn" onclick="quickAction('ergo','health check')">Health Check</button>
   <button class="rail-btn" onclick="refresh()">Refresh All</button>
+  <button class="rail-btn accent" onclick="fleetExercise('start')">Exercise Start</button>
+  <button class="rail-btn" onclick="fleetExercise('stop')">Exercise Stop</button>
 </div>
 
 <div id="toast"></div>
@@ -687,6 +694,30 @@ async function refreshFleet() {
     html += '<div class="plant-meta">No plants configured</div>';
   }
   el.innerHTML = html;
+}
+
+async function fleetExercise(action) {
+  const data = await fetchJSON('/api/fleet/exercise', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({action}),
+  });
+  if (data && data.ok) {
+    toast(action === 'start' ? 'Exercise started (plant-range)' : 'Exercise stopped');
+    refreshFleet();
+  } else {
+    toast('Exercise control failed: ' + (data && data.error ? data.error : 'unknown'));
+  }
+}
+
+async function fleetRegister() {
+  const data = await fetchJSON('/api/fleet/register', {method: 'POST'});
+  if (data && data.ok) {
+    toast('Node registered in fleet');
+    refreshFleet();
+  } else {
+    toast('Register failed: ' + (data && (data.error || data.stderr) ? (data.error || data.stderr) : 'unknown'));
+  }
 }
 
 async function refresh() {

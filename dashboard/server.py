@@ -901,6 +901,91 @@ async def handle_api_fleet_plants(request):
     return web.json_response({"plants": data.get("plants", [])})
 
 
+def _fleet_state_path() -> Path:
+    for sp in (
+        Path("/var/lib/starship/fleet-state.json"),
+        Path("/tmp/starship-fleet/fleet-state.json"),
+    ):
+        if sp.parent.exists() or sp.exists():
+            try:
+                sp.parent.mkdir(parents=True, exist_ok=True)
+                if os.access(sp.parent, os.W_OK):
+                    return sp
+            except Exception:
+                pass
+    p = Path("/tmp/starship-fleet/fleet-state.json")
+    p.parent.mkdir(parents=True, exist_ok=True)
+    return p
+
+
+async def handle_api_fleet_exercise(request):
+    """POST /api/fleet/exercise  body: {"action":"start"|"stop"}"""
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    action = (body.get("action") or request.rel_url.query.get("action") or "").lower()
+    if action not in ("start", "stop"):
+        return web.json_response({"error": "action must be start|stop"}, status=400)
+
+    state_path = _fleet_state_path()
+    state = {"nodes": {}, "exercise": {"active": False}}
+    if state_path.exists():
+        try:
+            state = json.loads(state_path.read_text())
+        except Exception:
+            pass
+
+    if action == "start":
+        state["exercise"] = {
+            "active": True,
+            "plant": "plant-range",
+            "started": datetime.now().isoformat(),
+        }
+    else:
+        state["exercise"] = {
+            "active": False,
+            "plant": None,
+            "stopped": datetime.now().isoformat(),
+        }
+    state["updated"] = datetime.now().isoformat()
+    state_path.write_text(json.dumps(state, indent=2))
+
+    # Best-effort NATS dual-publish
+    try:
+        nats = await get_nats()
+        payload = json.dumps(state["exercise"]).encode()
+        for subj in ("starship.fleet.exercise", "agnetic.fleet.exercise"):
+            await nats.publish(subj, payload)
+    except Exception as exc:
+        log.warning("fleet exercise nats publish skipped: %s", exc)
+
+    return web.json_response({"ok": True, "exercise": state["exercise"]})
+
+
+async def handle_api_fleet_register(request):
+    """POST /api/fleet/register — register local node via fleet.py helper logic."""
+    try:
+        fleet_py = PROJECT_DIR / "services" / "fleet.py"
+        if not fleet_py.exists():
+            fleet_py = Path("/opt/starship/lib/starship/services/fleet.py")
+        if fleet_py.exists():
+            proc = await asyncio.create_subprocess_exec(
+                sys.executable, str(fleet_py), "register",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            out, err = await proc.communicate()
+            return web.json_response({
+                "ok": proc.returncode == 0,
+                "stdout": out.decode(errors="replace"),
+                "stderr": err.decode(errors="replace"),
+            })
+        return web.json_response({"error": "fleet.py not found"}, status=404)
+    except Exception as e:
+        return web.json_response({"error": str(e)}, status=500)
+
+
 app = web.Application()
 app.router.add_get("/", handle_index)
 app.router.add_get("/api/dashboard", handle_api_dashboard)
@@ -918,6 +1003,8 @@ app.router.add_post("/api/chat/stream", handle_chat_stream)
 app.router.add_get("/api/health", handle_health)
 app.router.add_get("/api/fleet", handle_api_fleet)
 app.router.add_get("/api/fleet/plants", handle_api_fleet_plants)
+app.router.add_post("/api/fleet/exercise", handle_api_fleet_exercise)
+app.router.add_post("/api/fleet/register", handle_api_fleet_register)
 
 app.router.add_get("/marketplace", handle_marketplace_page)
 app.router.add_get("/api/marketplace/search", handle_marketplace_search)

@@ -77,10 +77,15 @@ node:
 ## Dashboard
 
 - Plant map: `GET /api/fleet` · `GET /api/fleet/plants`
-- UI panel **Fleet Map** on the main dashboard (port 8788).
+- Exercise: `POST /api/fleet/exercise` `{"action":"start"|"stop"}`
+- Register: `POST /api/fleet/register`
+- UI panel **Fleet Map** + Exercise Start/Stop buttons (port 8788)
+
+## Firstboot
+
+`scripts/starship-firstboot.sh` writes `/etc/starship/fleet-node.yaml`, copies `fleet.yaml`, runs `fleet.py register`, enables `starship-fleet.service`.
 
 ## Next
 
-- Wire fleet register into `install-daemon` / firstboot
 - Cross-plant ACL in policy engine
-- Dashboard exercise start/stop controls
+- Multi-node NATS cluster auth for fleet heartbeats

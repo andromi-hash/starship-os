@@ -31,11 +31,37 @@ if [[ -x "$REPO_DIR/scripts/install-models.sh" ]]; then
   bash "$REPO_DIR/scripts/install-models.sh" "$PROFILE" || true
 fi
 
-# 4) Enable mesh if units present
+# 4) Fleet topology + node registration
+if [[ -f "$REPO_DIR/config/fleet.yaml" ]]; then
+  cp "$REPO_DIR/config/fleet.yaml" /etc/starship/fleet.yaml
+fi
+# Map profile → default plant
+case "$PROFILE" in
+  edge) PLANT=plant-edge; ROLES="proxy,plant-controller" ;;
+  ops)  PLANT=plant-alpha; ROLES="proxy,romi,ergo,ops" ;;
+  *)    PLANT=plant-alpha; ROLES="proxy,romi,ergo" ;;
+esac
+ROLES_CSV="${STARSHIP_FLEET_ROLES:-$ROLES}"
+ROLES_YAML=$(echo "$ROLES_CSV" | awk -F, '{for(i=1;i<=NF;i++){gsub(/^ +| +$/,"",$i); printf "%s\"%s\"", (i>1?", ":""), $i}}')
+cat > /etc/starship/fleet-node.yaml <<EOF
+node:
+  plant: ${STARSHIP_FLEET_PLANT:-$PLANT}
+  roles: [${ROLES_YAML}]
+  team: ${STARSHIP_FLEET_TEAM:-ops}
+  profile: $PROFILE
+EOF
+if [[ -f "$REPO_DIR/services/fleet.py" ]]; then
+  python3 "$REPO_DIR/services/fleet.py" register || true
+elif [[ -f /opt/starship/lib/starship/services/fleet.py ]]; then
+  python3 /opt/starship/lib/starship/services/fleet.py register || true
+fi
+
+# 5) Enable mesh + fleet if units present
 if command -v systemctl &>/dev/null; then
   systemctl daemon-reload 2>/dev/null || true
   systemctl enable --now agnetic-mesh.target 2>/dev/null || true
+  systemctl enable --now starship-fleet.service 2>/dev/null || true
 fi
 
 echo "Firstboot complete. Dashboard: http://localhost:8788"
-echo "CLI: starshipctl --help"
+echo "CLI: starshipctl fleet status"

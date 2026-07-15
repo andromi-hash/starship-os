@@ -3,7 +3,7 @@ CARGO := $(HOME)/.cargo/bin/cargo
 GO := /tmp/go/bin/go
 export PATH := /tmp/go/bin:$(HOME)/.cargo/bin:$(HOME)/.local/bin:$(PATH)
 
-.PHONY: all build build-agent cli install uninstall run dev stop clean status profile sandbox
+.PHONY: all build build-agent cli install uninstall run dev stop clean status profile sandbox smoke
 
 all: build build-agent
 
@@ -77,6 +77,10 @@ profile:
 # ─── C11 sandbox spike (ADR 0001) ───────────────────────────────────
 sandbox:
 	$(MAKE) -C src/c/sandbox_spike all test
+
+# ─── Smoke tests ────────────────────────────────────────────────────
+smoke:
+	@bash scripts/smoke-test.sh
 
 # ─── Clean ──────────────────────────────────────────────────────────
 clean:
