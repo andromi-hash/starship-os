@@ -1,5 +1,5 @@
 #!/bin/bash
-# agnetic-os postinst — called after package files are extracted
+# Starship OS postinst — after package extract
 set -e
 
 echo "╔══════════════════════════════════════════════╗"
@@ -24,75 +24,68 @@ else
     echo "[OK] User nats already exists"
 fi
 
-# ─── 2. Create directories ─────────────────────────────────────────
-DIRS=(
-    /opt/agnetic/bin
-    /opt/agnetic/lib/agnetic/agents/skills
-    /opt/agnetic/lib/agnetic/dashboard
-    /opt/agnetic/lib/agnetic/tray
-    /opt/agnetic/lib/agnetic/scripts
-    /opt/agnetic/lib/agnetic/skills
-    /opt/agnetic/lib/agnetic/souls
-    /opt/agnetic/venv
-    /etc/agnetic/nats
-    /var/lib/agnetic/nats
-    /var/lib/agnetic/message-history
-    /var/log/agnetic
-)
-
-for d in "${DIRS[@]}"; do
-    mkdir -p "$d"
-done
+# ─── 2. Directories + legacy symlinks ────────────────────────────────
+mkdir -p /opt/starship/bin /opt/starship/lib/starship /opt/starship/venv
+mkdir -p /etc/starship/nats /var/lib/starship/nats /var/lib/starship/message-history /var/log/starship
+ln -sfn /opt/starship /opt/agnetic
+ln -sfn /etc/starship /etc/agnetic
+ln -sfn /var/lib/starship /var/lib/agnetic
+ln -sfn /var/log/starship /var/log/agnetic
+# active.conf default if missing
+if [[ ! -e /etc/starship/nats/active.conf ]]; then
+    ln -sfn /etc/starship/nats/agent-bus.conf /etc/starship/nats/active.conf
+fi
 echo "[OK] Directories created"
 
-# ─── 3. Create Python venv ─────────────────────────────────────────
-if [[ ! -d /opt/agnetic/venv ]]; then
-    python3 -m venv /opt/agnetic/venv
+# ─── 3. Python venv ─────────────────────────────────────────────────
+if [[ ! -x /opt/starship/venv/bin/python3 ]]; then
+    if python3 -m venv /opt/starship/venv 2>/dev/null; then
+        echo "[OK] Created venv"
+    else
+        echo "[WARN] python3 -m venv failed (install python3-venv)"
+    fi
 fi
-/opt/agnetic/venv/bin/pip install --upgrade pip -q 2>/dev/null
-/opt/agnetic/venv/bin/pip install nats-py aiohttp httpx PyYAML -q 2>/dev/null
-echo "[OK] Python venv ready"
+if [[ -x /opt/starship/venv/bin/pip ]]; then
+    /opt/starship/venv/bin/pip install --upgrade pip -q 2>/dev/null || true
+    /opt/starship/venv/bin/pip install nats-py aiohttp httpx PyYAML -q 2>/dev/null || true
+    echo "[OK] Python venv ready"
+else
+    echo "[WARN] venv pip missing — agents need: python3 -m venv /opt/starship/venv && pip install nats-py aiohttp httpx PyYAML"
+fi
 
-# ─── 4. Set permissions ────────────────────────────────────────────
-chown -R agnetic:agnetic /opt/agnetic
-chown -R agnetic:agnetic /etc/agnetic
-chown -R agnetic:agnetic /var/lib/agnetic
-chown -R agnetic:agnetic /var/log/agnetic
-chown -R nats:nats /var/lib/agnetic/nats
-chmod +x /opt/agnetic/bin/* 2>/dev/null || true
+# ─── 4. Permissions ─────────────────────────────────────────────────
+chown -R agnetic:agnetic /opt/starship /etc/starship /var/lib/starship /var/log/starship 2>/dev/null || true
+chown -R nats:nats /var/lib/starship/nats 2>/dev/null || true
+# NATS conf readable by nats user
+chown -R root:nats /etc/starship/nats 2>/dev/null || true
+chmod 755 /etc/starship/nats 2>/dev/null || true
+chmod +x /opt/starship/bin/* 2>/dev/null || true
 echo "[OK] Permissions set"
 
-# ─── 5. Reload systemd ─────────────────────────────────────────────
+# ─── 5. Systemd ─────────────────────────────────────────────────────
 if command -v systemctl &>/dev/null; then
-    systemctl daemon-reload
-    echo "[OK] Systemd reloaded"
-fi
-
-# ─── 6. Enable services ────────────────────────────────────────────
-if command -v systemctl &>/dev/null; then
-    for unit in agnetic-nats agnetic-staragent agnetic-agent@proxy \
-                agnetic-agent@romi agnetic-agent@ergo agnetic-status-bridge \
-                agnetic-message-history agnetic-dashboard; do
-        systemctl enable "$unit.service" 2>/dev/null || true
+    systemctl daemon-reload || true
+    for unit in agnetic-nats agnetic-staragent \
+                agnetic-agent@proxy agnetic-agent@romi agnetic-agent@ergo \
+                agnetic-status-bridge agnetic-message-history agnetic-dashboard \
+                starship-fleet; do
+        systemctl enable "${unit}.service" 2>/dev/null || true
     done
+    systemctl enable agnetic-mesh.target 2>/dev/null || true
     echo "[OK] Services enabled"
 fi
 
-# ─── 7. GPU detection ──────────────────────────────────────────────
-if [[ -x /opt/agnetic/bin/detect-gpu.sh ]]; then
-    echo ""
-    echo "Running GPU detection..."
-    /opt/agnetic/bin/detect-gpu.sh detect 2>/dev/null || true
-    /opt/agnetic/bin/detect-gpu.sh configure 2>/dev/null || true
+# ─── 6. GPU detection (optional) ────────────────────────────────────
+if [[ -x /opt/starship/bin/detect-gpu.sh ]]; then
+    /opt/starship/bin/detect-gpu.sh detect 2>/dev/null || true
 fi
 
-# ─── 8. Done ────────────────────────────────────────────────────────
 echo ""
 echo "Installation complete!"
 echo ""
-echo "  Start:   systemctl start agnetic-mesh.target"
-echo "  Status:  systemctl status agnetic-mesh.target"
-echo "  Logs:    journalctl -u agnetic-* -f"
-echo "  CLI:     starshipctl --help"
+echo "  Firstboot: STARSHIP_PROFILE=ops /opt/starship/bin/starship-firstboot.sh"
+echo "  Start:     systemctl start agnetic-mesh.target"
+echo "  CLI:       starshipctl fleet status"
 echo "  Dashboard: http://localhost:8788"
 echo ""
+exit 0

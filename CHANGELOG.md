@@ -15,6 +15,7 @@ All notable changes to **Starship OS**.
 - **C11 namespaces** best-effort NEWNS/NEWPID (`--no-ns` to disable)
 - **ISO firstboot smoke** — `scripts/iso-firstboot-smoke.sh`; autoinstall invokes firstboot
 - **Packaging** — `.deb` / install-daemon ship fleet, accounts, firstboot, sandbox_run
+- **`.deb` layout fix** — proper `opt/`/`etc/` paths (no nested `installed/`); postinst → `/opt/starship`
 - **CI** — smoke + C11 + libseccomp jobs
 - Smoke suite expanded (40+ checks)
 

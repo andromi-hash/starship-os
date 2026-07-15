@@ -70,7 +70,7 @@
 - [x] `.deb` ships fleet / NATS accounts / firstboot / sandbox_run / fleet unit
 - [x] install-daemon + firstboot install gen scripts; ops enables `STARSHIP_SANDBOX_NATIVE=1`
 - [x] CI: smoke + C11 + nats-server + libseccomp
-- [ ] End-to-end `make deb` on clean tree (CI or local)
+- [x] End-to-end `make deb` — fixed pkgroot layout, postinst, install verified
 - [ ] policyexec C11 spike (policy JSON shared with Python)
 - [ ] Alpha 2.1 beta tag when packaging green
 
