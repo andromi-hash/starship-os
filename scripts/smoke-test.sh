@@ -39,6 +39,9 @@ check "fleet-bus token placeholder" grep -q '__STARSHIP_NATS_TOKEN__' nats/fleet
 check "C11 sandbox builds" bash -c 'make -C src/c/sandbox_spike all >/dev/null 2>&1'
 check "C11 sandbox echo" bash -c './src/c/sandbox_spike/sandbox_run --timeout 2 -- /bin/echo ok 2>/dev/null | grep -q ok'
 check "C11 sandbox denies mount" bash -c './src/c/sandbox_spike/sandbox_run -- mount >/dev/null 2>&1; test $? -eq 126'
+check "bench-sandbox script" test -x scripts/bench-sandbox.sh -o -f scripts/bench-sandbox.sh
+check "sandbox_native import" bash -c 'PYTHONPATH=agents python3 -c "from sandbox_native import sandbox_binary,native_enabled; assert sandbox_binary()"'
+check "C11 p50 under 2ms" bash -c 'bash scripts/bench-sandbox.sh 50 >/dev/null'
 check "profiles.yaml present" test -f config/profiles.yaml
 check "fleet.yaml present" test -f config/fleet.yaml
 check "pins.json present" test -f third_party/pins.json

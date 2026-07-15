@@ -54,10 +54,31 @@ Minimal compile targets under `src/c/`:
 - [x] `sandbox_run` builds on Ubuntu 24.04
 - [x] Allowed command exits 0 with captured stdout
 - [x] Denied syscall/path fails closed (non-zero) — `mount` → exit 126
-- [ ] Overhead p50 < 2ms for trivial command (vs Python baseline)
+- [x] Overhead p50 < 2ms for trivial command (vs Python baseline)
+
+## Benchmark (2026-07-15, N=200, `/bin/echo ok`)
+
+Run: `make bench` or `bash scripts/bench-sandbox.sh 200`
+
+| Metric | p50 (ms) | p95 (ms) | Notes |
+|--------|----------|----------|-------|
+| **c11_internal_wall** | **~0.51** | ~0.76 | fork+exec inside `sandbox_run` |
+| c11_outer_spawn | ~1.13 | ~2.15 | Python spawns sandbox binary |
+| py_exec | ~0.51 | ~0.80 | `subprocess.run` argv |
+| py_shell | ~0.98 | ~1.55 | shell path (CommandExecutor-like) |
+
+**Verdict:** C11 internal p50 **≪ 2ms** — criterion met. Outer spawn adds ~0.6ms for process bootstrap; still acceptable for Alpha 2.1 optional path.
+
+## Optional Python bridge
+
+- `agents/sandbox_native.py` — subprocess bridge to `sandbox_run`
+- Enable: `STARSHIP_SANDBOX_NATIVE=1` (used by `CommandExecutor` in `agents/tools.py`)
+- Binary discovery: `STARSHIP_SANDBOX_RUN`, `PATH`, `/opt/starship/bin/sandbox_run`, repo spike path
 
 ## References
 
 - `src/c/README.md`
 - `src/c/sandbox_spike/`
+- `scripts/bench-sandbox.sh`
+- `agents/sandbox_native.py`
 - `security/apparmor/agnetic-agent`

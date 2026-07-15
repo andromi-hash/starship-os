@@ -16,6 +16,16 @@ See **ADR 0001**: `docs/adr/0001-c11-agent-runtime.md`
 ```bash
 make -C src/c/sandbox_spike
 make -C src/c/sandbox_spike test
+make bench          # ADR 0001 p50 timing vs Python
 ```
+
+## Optional native tool path
+
+```bash
+export STARSHIP_SANDBOX_NATIVE=1
+# optional: export STARSHIP_SANDBOX_RUN=/path/to/sandbox_run
+```
+
+Python `CommandExecutor` then routes shell tools through `agents/sandbox_native.py`.
 
 Python agent_daemon remains the control plane for Alpha 2.1.

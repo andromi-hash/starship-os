@@ -18,6 +18,8 @@ All notable changes to **Starship OS**.
 - **Cross-plant ACL** — `acl` block in `fleet.yaml`; `check_cross_plant` in policy engine
 - **Multi-node NATS fleet auth** — `nats/fleet-bus.conf` + `fleet-auth.yaml`; `STARSHIP_NATS_TOKEN`
 - **Ops firstboot fleet-bus** — token materialization, `active.conf`, `nats.env` / `fleet.env`
+- **C11 sandbox bench** — `make bench` / `scripts/bench-sandbox.sh` (p50 ≪ 2ms, ADR 0001)
+- **Native sandbox bridge** — `agents/sandbox_native.py` via `STARSHIP_SANDBOX_NATIVE=1`
 
 ### Changed
 - Product branding strings → Starship OS; debian package `starship-os`

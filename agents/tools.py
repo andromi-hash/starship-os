@@ -140,6 +140,27 @@ class CommandExecutor:
             log.info("[DRY RUN] Would execute: %s", redact(command))
             return ExecuteResult(exit_code=0, stdout=f"[DRY RUN] {command}", command=command)
 
+        # Optional C11 sandbox_run (ADR 0001) — STARSHIP_SANDBOX_NATIVE=1
+        try:
+            from sandbox_native import native_enabled, run_shell_native
+            if native_enabled():
+                nr = await asyncio.to_thread(run_shell_native, command, timeout=timeout)
+                if nr.denied:
+                    raise SandboxError(nr.stderr or "native sandbox denied", command)
+                return ExecuteResult(
+                    exit_code=nr.exit_code,
+                    stdout=(nr.stdout or "")[:MAX_OUTPUT_SIZE],
+                    stderr=(nr.stderr or "")[:MAX_OUTPUT_SIZE],
+                    timed_out=nr.timed_out,
+                    command=command,
+                )
+        except SandboxError:
+            raise
+        except ImportError:
+            pass
+        except Exception as e:
+            log.debug("native sandbox fallback: %s", e)
+
         try:
             merged_env = {**os.environ, "TERM": "dumb"}
             if env:
