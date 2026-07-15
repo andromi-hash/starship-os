@@ -11,6 +11,8 @@ Restart=always
 RestartSec=10
 User=agnetic
 Group=agnetic
+EnvironmentFile=-/etc/starship/nats.env
+EnvironmentFile=-/etc/starship/fleet.env
 Environment=PYTHONPATH=/opt/starship/lib/starship:/opt/starship/lib/starship/agents
 Environment=STARSHIP_ROOT=/opt/starship
 Environment=AGNETIC_ROOT=/opt/starship

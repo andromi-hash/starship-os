@@ -1,13 +1,13 @@
 # Starship OS
 
 **An AI agent-first operating system built on Ubuntu 24.04 LTS**  
-**Version:** 2.1.0-alpha.1 · **Canonical repo:** [andromi-hash/starship-os](https://github.com/andromi-hash/starship-os)
+**Version:** 2.1.0-alpha.2 · **Canonical repo:** [andromi-hash/starship-os](https://github.com/andromi-hash/starship-os)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Platform: Ubuntu 24.04](https://img.shields.io/badge/Platform-Ubuntu%2024.04-orange.svg)](https://ubuntu.com)
 [![NATS/JetStream](https://img.shields.io/badge/Bus-NATS%2FJetStream-green.svg)](https://nats.io)
 [![Ollama GPU](https://img.shields.io/badge/Inference-Ollama%20GPU-red.svg)](https://ollama.com)
-[![Version](https://img.shields.io/badge/version-2.1.0--alpha.1-purple.svg)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.1.0--alpha.2-purple.svg)](VERSION)
 
 Starship OS is a local-first, AI-native OS layer where autonomous agents communicate over NATS/JetStream, execute tools in a sandboxed environment, and present a real-time command-and-control dashboard. No cloud required. Everything runs on your hardware.
 

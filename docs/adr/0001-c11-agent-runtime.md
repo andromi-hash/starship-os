@@ -51,9 +51,9 @@ Minimal compile targets under `src/c/`:
 
 ## Success criteria
 
-- [ ] `sandbox_run` builds on Ubuntu 24.04
-- [ ] Allowed command exits 0 with captured stdout
-- [ ] Denied syscall/path fails closed (non-zero)
+- [x] `sandbox_run` builds on Ubuntu 24.04
+- [x] Allowed command exits 0 with captured stdout
+- [x] Denied syscall/path fails closed (non-zero) — `mount` → exit 126
 - [ ] Overhead p50 < 2ms for trivial command (vs Python baseline)
 
 ## References

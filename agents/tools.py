@@ -561,6 +561,8 @@ TOOL_DEFINITIONS = [
                     "agent": {"type": "string", "description": "Agent name (proxy, romi, ergo)"},
                     "command": {"type": "string", "description": "Command to send"},
                     "args": {"type": "object", "description": "Optional arguments"},
+                    "plant": {"type": "string", "description": "Target plant id (cross-plant ACL enforced)"},
+                    "target_plant": {"type": "string", "description": "Alias for plant"},
                 },
                 "required": ["agent", "command"],
             },
@@ -589,10 +591,10 @@ async def execute_tool(name: str, arguments: dict, nats=None, callbacks: dict = 
     # Auto-repair arguments (Hermes pattern)
     arguments = repair_tool_arguments(arguments, name)
 
-    # Fleet red/blue policy (never unrestricted OpenCode for red-team)
+    # Fleet red/blue + cross-plant ACL (never unrestricted OpenCode for red-team)
     try:
         from fleet_policy import check_tool
-        denial = check_tool(name)
+        denial = check_tool(name, arguments=arguments)
         if denial:
             result = {"error": True, "message": denial, "policy": "fleet"}
             if "tool_complete" in callbacks:
@@ -791,21 +793,35 @@ def _tool_search_files(args: dict) -> dict:
 async def _tool_delegate(nats, args: dict) -> dict:
     agent = args.get("agent", "")
     command = args.get("command", "")
-    extra_args = args.get("args", {})
+    extra_args = args.get("args", {}) or {}
+    target_plant = args.get("plant") or args.get("target_plant")
 
     if not nats:
         return {"error": "NATS not connected — cannot delegate"}
 
-    subject = f"agnetic.agent.{agent}.command.{command.replace(' ', '.')}"
-    reply = f"agnetic.delegate.{datetime.now().timestamp()}"
+    # Dual-publish primary starship.* + legacy agnetic.*
+    try:
+        from nats_subjects import dual
+        subjects = dual(f"starship.agent.{agent}.command.{command.replace(' ', '.')}")
+    except ImportError:
+        cmd = command.replace(" ", ".")
+        subjects = [
+            f"starship.agent.{agent}.command.{cmd}",
+            f"agnetic.agent.{agent}.command.{cmd}",
+        ]
+
+    reply = f"starship.delegate.{datetime.now().timestamp()}"
+    payload = json.dumps({
+        "command": command,
+        "args": extra_args,
+        "reply_to": reply,
+        "plant": target_plant,
+    }).encode()
 
     try:
         sub = await nats.subscribe(reply, max_msgs=1)
-        await nats.publish(subject, json.dumps({
-            "command": command,
-            "args": extra_args,
-            "reply_to": reply,
-        }).encode())
+        for subject in subjects:
+            await nats.publish(subject, payload)
 
         msg = await sub.next_msg(timeout=60)
         result = json.loads(msg.data.decode())

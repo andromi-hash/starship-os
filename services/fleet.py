@@ -52,12 +52,28 @@ except ImportError:
         for s in dual(subject):
             await nc.publish(s, payload)
 
-NATS_URL = os.getenv("NATS_URL", "nats://127.0.0.1:4222")
+def _nats_url() -> str:
+    """Build NATS URL; inject token from STARSHIP_NATS_TOKEN when set."""
+    url = os.getenv("NATS_URL", "nats://127.0.0.1:4222")
+    token = os.getenv("STARSHIP_NATS_TOKEN", "").strip()
+    if not token:
+        return url
+    # nats://host:port → nats://:token@host:port
+    if "://" not in url:
+        return url
+    scheme, rest = url.split("://", 1)
+    if "@" in rest:
+        return url  # already has credentials
+    return f"{scheme}://:{token}@{rest}"
+
+
+NATS_URL = _nats_url()
 CONFIG_PATHS = [
     Path("/etc/starship/fleet.yaml"),
     Path("/etc/starship/fleet-node.yaml"),
     PROJECT_ROOT / "config" / "fleet.yaml",
 ]
+AUTH_MAP = PROJECT_ROOT / "nats" / "fleet-auth.yaml"
 STATE_DIR = Path(os.getenv("STARSHIP_STATE", "/var/lib/starship"))
 if not os.access(STATE_DIR, os.W_OK):
     STATE_DIR = Path("/tmp/starship-fleet")
@@ -221,6 +237,11 @@ def cmd_status(cfg: dict) -> int:
     ex = state.get("exercise", {})
     print(f"Exercise: {'ACTIVE' if ex.get('active') else 'idle'}" + (f" plant={ex.get('plant')}" if ex.get("active") else ""))
     print(f"State:   {STATE_FILE}")
+    token_set = bool(os.getenv("STARSHIP_NATS_TOKEN", "").strip())
+    print(f"NATS:    {NATS_URL.split('@')[-1] if '@' in NATS_URL else NATS_URL}"
+          f"  auth={'token' if token_set else 'none (dev)'}")
+    acl = cfg.get("acl") or {}
+    print(f"ACL:     default={acl.get('default', 'same_plant_only')} edges={len(acl.get('allow') or {})}")
     return 0
 
 
@@ -326,8 +347,11 @@ async def daemon_loop(cfg: dict) -> None:
     state.setdefault("nodes", {})[node.node_id] = node.to_dict()
     save_state(state)
 
-    nc = await nats_connect(NATS_URL)
-    print(f"fleet daemon: {node.node_id} plant={node.plant} nats={NATS_URL}")
+    url = _nats_url()
+    nc = await nats_connect(url)
+    auth = "token" if os.getenv("STARSHIP_NATS_TOKEN", "").strip() else "none"
+    safe = url.split("@")[-1] if "@" in url else url
+    print(f"fleet daemon: {node.node_id} plant={node.plant} nats={safe} auth={auth}")
 
     async def on_register(msg):
         try:

@@ -5,12 +5,14 @@ Documentation=https://github.com/andromi-hash/starship-os
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/nats-server -c /etc/starship/nats/agent-bus.conf
+# active.conf → agent-bus.conf (dev/server/edge) or fleet-bus.conf (ops)
+ExecStart=/usr/local/bin/nats-server -c /etc/starship/nats/active.conf
 ExecReload=/bin/kill -s HUP $MAINPID
 Restart=always
 RestartSec=3
 User=nats
 Group=nats
+EnvironmentFile=-/etc/starship/nats.env
 LimitNOFILE=65535
 NoNewPrivileges=true
 ProtectSystem=strict

@@ -51,11 +51,11 @@ case "$profile" in
   *) echo "Unknown profile: $profile (use edge|server|ops)" >&2; exit 1 ;;
 esac
 
-# num_ctx from profile defaults
+# num_ctx / nats_mode from profile defaults
 case "$profile" in
-  edge) num_ctx=8192 ;;
-  server) num_ctx=16384 ;;
-  ops) num_ctx=32768 ;;
+  edge) num_ctx=8192; nats_mode=agent ;;
+  server) num_ctx=16384; nats_mode=agent ;;
+  ops) num_ctx=32768; nats_mode=fleet ;;
 esac
 
 cat > "$OUT_FILE" <<EOF
@@ -72,6 +72,7 @@ hardware:
 settings:
   num_ctx: $num_ctx
   dashboard_port: 8788
+  nats_mode: $nats_mode
   nats_prefix: starship
   nats_legacy_prefix: agnetic
 source_profiles: $PROFILES_SRC

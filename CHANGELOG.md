@@ -15,9 +15,13 @@ All notable changes to **Starship OS**.
 - **Fleet manager** — plants, ops manager, red/blue (`config/fleet.yaml`, `services/fleet.py`, `starshipctl fleet`)
 - **Dashboard fleet map** — `/api/fleet` + plant map panel
 - **Red-team policy** — `fleet_policy.py` denies OpenCode/shell/write for red-team
+- **Cross-plant ACL** — `acl` block in `fleet.yaml`; `check_cross_plant` in policy engine
+- **Multi-node NATS fleet auth** — `nats/fleet-bus.conf` + `fleet-auth.yaml`; `STARSHIP_NATS_TOKEN`
+- **Ops firstboot fleet-bus** — token materialization, `active.conf`, `nats.env` / `fleet.env`
 
 ### Changed
 - Product branding strings → Starship OS; debian package `starship-os`
+- `delegate_to_agent` dual-publishes `starship.*` / `agnetic.*` and accepts `plant`
 
 ## [2.1.0-alpha.1] — 2026-07-15
 

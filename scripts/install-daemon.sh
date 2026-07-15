@@ -188,14 +188,20 @@ log "Configs installed to /etc/starship/ (legacy: /etc/agnetic)"
 log "Installing NATS configuration..."
 
 cp "$REPO_DIR/nats/agent-bus.conf" /etc/starship/nats/
+cp "$REPO_DIR/nats/fleet-bus.conf" /etc/starship/nats/ 2>/dev/null || true
+cp "$REPO_DIR/nats/fleet-auth.yaml" /etc/starship/nats/ 2>/dev/null || true
 cp "$REPO_DIR/nats/server.conf" /etc/starship/nats/ 2>/dev/null || true
 cp "$REPO_DIR/nats/subjects.yaml" /etc/starship/nats/ 2>/dev/null || true
+# Default active bus = agent-bus (firstboot ops profile switches to fleet-bus)
+if [[ ! -e /etc/starship/nats/active.conf ]]; then
+  ln -sfn /etc/starship/nats/agent-bus.conf /etc/starship/nats/active.conf
+fi
 
 # Update NATS config to use correct paths
 sed -i 's|/home/tech/agnetic-os/nats|/etc/starship/nats|g' /etc/starship/nats/agent-bus.conf 2>/dev/null || true
 sed -i 's|/etc/agnetic/nats|/etc/starship/nats|g' /etc/starship/nats/agent-bus.conf 2>/dev/null || true
 
-log "NATS config installed to /etc/starship/nats/"
+log "NATS config installed to /etc/starship/nats/ (active → $(readlink -f /etc/starship/nats/active.conf 2>/dev/null || echo agent-bus))"
 
 # ─── 7. Create Python venv ─────────────────────────────────────────
 log "Creating Python venv..."

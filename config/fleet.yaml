@@ -68,6 +68,16 @@ red_blue:
     - "blue-team may use full diagnostics"
     - "cross-plant red traffic denied by default"
 
+# Cross-plant ACL (policy engine — agents/fleet_policy.py)
+# default: same_plant_only | deny | allow
+# allow: source_plant → [target plants] (explicit edges)
+acl:
+  default: same_plant_only
+  allow:
+    plant-alpha: [plant-edge]      # ops → edge
+    plant-edge: [plant-alpha]      # edge → ops
+    plant-range: []                # range never leaves (also isolation: true)
+
 # This node (override via /etc/starship/fleet-node.yaml)
 node:
   plant: plant-alpha

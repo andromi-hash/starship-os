@@ -1,6 +1,6 @@
 # Starship OS — Streamline, Standardize, Bare-Metal Plan (Alpha 2.1)
 
-**Status:** Phase 0 complete · Phase 1 in progress  
+**Status:** Phase 0–1 complete · Phase 2 in progress  
 **Canonical repo:** https://github.com/andromi-hash/starship-os  
 **Legacy Alpha 2.0:** https://github.com/andromi-hash/agnetic-os (archived source)
 
@@ -10,7 +10,7 @@
 |-------|-------------|---------|
 | Alpha | starship-os (scaffold) | 0.x |
 | Alpha 2.0 | agnetic-os | 0.2.0 packaging mesh |
-| Alpha 2.1 | starship-os (this tree) | **2.1.0-alpha.1** |
+| Alpha 2.1 | starship-os (this tree) | **2.1.0-alpha.2** |
 
 ## Product decisions (locked)
 
@@ -31,7 +31,7 @@
 4. ~~Secret scrub + .gitignore~~
 5. ~~Tag 2.1.0-alpha.1~~
 
-## Phase 1 (in progress)
+## Phase 1 (done) — 2.1.0-alpha.2
 
 - [x] `starshipctl` rename (Go CLI, Makefile, packaging scripts)
 - [x] `/opt/starship` + `/etc/starship` install roots (legacy `/opt/agnetic` symlinks)
@@ -43,6 +43,18 @@
 - [x] ISO autoinstall stubs (`iso/autoinstall/`)
 - [x] OpenCode + oh-my-opencode-slim vendoring (pins + tarballs + install script)
 - [x] Fleet / ops manager / plant / red-blue scaffold (`config/fleet.yaml`, `services/fleet.py`, `starshipctl fleet`)
+- [x] Fleet map UI + exercise controls + firstboot register + smoke tests
+
+## Phase 2 (in progress) — fleet hardening + native path
+
+- [x] Cross-plant ACL in policy engine (`agents/fleet_policy.py` + `config/fleet.yaml` acl)
+- [x] Multi-node NATS fleet auth map (`nats/fleet-bus.conf`, `nats/fleet-auth.yaml`, token via `STARSHIP_NATS_TOKEN`)
+- [x] Wire fleet-bus into firstboot (ops profile) + install-daemon NATS active.conf
+- [ ] NATS accounts/nkeys for untrusted multi-tenant (prod)
+- [ ] C11 sandbox: measure p50 overhead vs Python; document in ADR
+- [ ] Optional ctypes bridge: Python tools → `sandbox_run`
+- [x] README / badge version sync to 2.1.0-alpha.2
+- [ ] Tag `v2.1.0-alpha.3` when Phase 2 scaffold green
 
 ## Language map
 
@@ -62,4 +74,5 @@
 - `docs/AGENTS.md` — agent context for tooling
 - `docs/PERFORMANCE_PLAN.md` — C++ performance roadmap
 - `docs/plans/alpha-2.1-addendum.md` — OpenCode + models + GitHub
+- `docs/FLEET.md` — fleet topology + ACL + NATS auth
 - `config/models.yaml` — model registry
