@@ -53,18 +53,26 @@ except ImportError:
             await nc.publish(s, payload)
 
 def _nats_url() -> str:
-    """Build NATS URL; inject token from STARSHIP_NATS_TOKEN when set."""
+    """Build NATS URL; inject user/pass or token from env when set."""
+    try:
+        from nats_connect import build_nats_url
+        return build_nats_url()
+    except ImportError:
+        pass
     url = os.getenv("NATS_URL", "nats://127.0.0.1:4222")
+    user = os.getenv("NATS_USER", "").strip()
+    password = os.getenv("NATS_PASSWORD", "").strip()
     token = os.getenv("STARSHIP_NATS_TOKEN", "").strip()
-    if not token:
-        return url
-    # nats://host:port → nats://:token@host:port
     if "://" not in url:
         return url
     scheme, rest = url.split("://", 1)
     if "@" in rest:
-        return url  # already has credentials
-    return f"{scheme}://:{token}@{rest}"
+        return url
+    if user and password:
+        return f"{scheme}://{user}:{password}@{rest}"
+    if token:
+        return f"{scheme}://:{token}@{rest}"
+    return url
 
 
 NATS_URL = _nats_url()
@@ -237,9 +245,21 @@ def cmd_status(cfg: dict) -> int:
     ex = state.get("exercise", {})
     print(f"Exercise: {'ACTIVE' if ex.get('active') else 'idle'}" + (f" plant={ex.get('plant')}" if ex.get("active") else ""))
     print(f"State:   {STATE_FILE}")
-    token_set = bool(os.getenv("STARSHIP_NATS_TOKEN", "").strip())
-    print(f"NATS:    {NATS_URL.split('@')[-1] if '@' in NATS_URL else NATS_URL}"
-          f"  auth={'token' if token_set else 'none (dev)'}")
+    mode = os.getenv("STARSHIP_NATS_MODE", "")
+    if os.getenv("NATS_USER") or mode == "accounts":
+        auth = f"accounts/{os.getenv('STARSHIP_NATS_ROLE', os.getenv('NATS_USER', '?'))}"
+    elif os.getenv("STARSHIP_NATS_TOKEN", "").strip():
+        auth = "token"
+    elif os.getenv("STARSHIP_NATS_NKEY_SEED") or os.getenv("STARSHIP_NATS_NKEY_SEED_FILE"):
+        auth = "nkey"
+    else:
+        auth = "none (dev)"
+    try:
+        from nats_connect import safe_url
+        nats_disp = safe_url(NATS_URL)
+    except ImportError:
+        nats_disp = NATS_URL.split("@")[-1] if "@" in NATS_URL else NATS_URL
+    print(f"NATS:    {nats_disp}  auth={auth}")
     acl = cfg.get("acl") or {}
     print(f"ACL:     default={acl.get('default', 'same_plant_only')} edges={len(acl.get('allow') or {})}")
     return 0
@@ -292,15 +312,21 @@ def cmd_register(cfg: dict) -> int:
 
 
 async def _nats_register(node: FleetNode) -> None:
-    from nats import connect as nats_connect
+    try:
+        from nats_connect import connect as nats_connect, safe_url
+    except ImportError:
+        from nats import connect as nats_connect
 
-    nc = await nats_connect(NATS_URL)
+        def safe_url(u=None):
+            return u or NATS_URL
+
+    nc = await nats_connect(_nats_url())
     payload = json.dumps(node.to_dict()).encode()
     await dual_publish(nc, SUBJECT_REGISTER, payload)
     await dual_publish(nc, SUBJECT_STATUS, payload)
     await nc.flush()
     await nc.close()
-    print(f"nats: dual-published register on {dual(SUBJECT_REGISTER)}")
+    print(f"nats: dual-published register on {dual(SUBJECT_REGISTER)} via {safe_url()}")
 
 
 def cmd_exercise(cfg: dict, action: str) -> int:
@@ -331,16 +357,26 @@ def cmd_exercise(cfg: dict, action: str) -> int:
 
 
 async def _nats_exercise(exercise: dict) -> None:
-    from nats import connect as nats_connect
+    try:
+        from nats_connect import connect as nats_connect
+    except ImportError:
+        from nats import connect as nats_connect
 
-    nc = await nats_connect(NATS_URL)
+    nc = await nats_connect(_nats_url())
     await dual_publish(nc, SUBJECT_EXERCISE, json.dumps(exercise).encode())
     await nc.flush()
     await nc.close()
 
 
 async def daemon_loop(cfg: dict) -> None:
-    from nats import connect as nats_connect
+    try:
+        from nats_connect import connect as nats_connect, safe_url
+    except ImportError:
+        from nats import connect as nats_connect
+
+        def safe_url(u=None):
+            u = u or _nats_url()
+            return u.split("@")[-1] if "@" in u else u
 
     node = build_local_node(cfg)
     state = load_state()
@@ -349,9 +385,16 @@ async def daemon_loop(cfg: dict) -> None:
 
     url = _nats_url()
     nc = await nats_connect(url)
-    auth = "token" if os.getenv("STARSHIP_NATS_TOKEN", "").strip() else "none"
-    safe = url.split("@")[-1] if "@" in url else url
-    print(f"fleet daemon: {node.node_id} plant={node.plant} nats={safe} auth={auth}")
+    mode = os.getenv("STARSHIP_NATS_MODE", "")
+    if os.getenv("NATS_USER") or mode == "accounts":
+        auth = f"accounts/{os.getenv('STARSHIP_NATS_ROLE', os.getenv('NATS_USER', 'user'))}"
+    elif os.getenv("STARSHIP_NATS_TOKEN", "").strip():
+        auth = "token"
+    elif os.getenv("STARSHIP_NATS_NKEY_SEED") or os.getenv("STARSHIP_NATS_NKEY_SEED_FILE"):
+        auth = "nkey"
+    else:
+        auth = "none"
+    print(f"fleet daemon: {node.node_id} plant={node.plant} nats={safe_url(url)} auth={auth}")
 
     async def on_register(msg):
         try:

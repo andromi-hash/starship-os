@@ -50,7 +50,7 @@
 - [x] Cross-plant ACL in policy engine (`agents/fleet_policy.py` + `config/fleet.yaml` acl)
 - [x] Multi-node NATS fleet auth map (`nats/fleet-bus.conf`, `nats/fleet-auth.yaml`, token via `STARSHIP_NATS_TOKEN`)
 - [x] Wire fleet-bus into firstboot (ops profile) + install-daemon NATS active.conf
-- [ ] NATS accounts/nkeys for untrusted multi-tenant (prod)
+- [x] NATS accounts/nkeys for untrusted multi-tenant (`gen-nats-accounts.sh`, ops firstboot)
 - [x] C11 sandbox: measure p50 overhead vs Python; document in ADR (`make bench`)
 - [x] Optional native bridge: Python tools → `sandbox_run` (`STARSHIP_SANDBOX_NATIVE=1`)
 - [x] README / badge version sync to 2.1.0-alpha.2

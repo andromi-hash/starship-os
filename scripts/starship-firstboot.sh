@@ -181,9 +181,72 @@ EOF
   echo "  active.conf → agent-bus"
 }
 
-# ops profile always gets fleet-bus; others only if STARSHIP_FLEET_BUS=1
-if [[ "$PROFILE" == "ops" || "$ENABLE_FLEET_BUS" == "1" || "$ENABLE_FLEET_BUS" == "true" ]]; then
-  _enable_fleet_bus
+_enable_accounts_bus() {
+  echo "NATS mode: multi-tenant accounts + nkeys"
+  _install_nats_configs
+  local gen="$REPO_DIR/scripts/gen-nats-accounts.sh"
+  local out="/etc/starship/nats"
+  mkdir -p "$out/creds" /var/lib/starship/nats
+  if [[ -x "$gen" || -f "$gen" ]]; then
+    STARSHIP_NATS_HOST="${STARSHIP_NATS_HOST:-127.0.0.1}" \
+      bash "$gen" --out "$out" --host "${STARSHIP_NATS_HOST:-127.0.0.1}" || true
+  fi
+  if [[ -f "$out/fleet-accounts.conf" ]]; then
+    ln -sfn "$out/fleet-accounts.conf" /etc/starship/nats/active.conf
+  else
+    echo "warn: fleet-accounts.conf missing — falling back to fleet-bus token" >&2
+    _enable_fleet_bus
+    return 0
+  fi
+  # Install ops client env for fleet daemon
+  if [[ -f "$out/nats.env" ]]; then
+    cp "$out/nats.env" /etc/starship/nats.env
+    chmod 640 /etc/starship/nats.env 2>/dev/null || true
+    chown root:agnetic /etc/starship/nats.env 2>/dev/null || true
+  elif [[ -f "$out/creds/ops.env" ]]; then
+    cp "$out/creds/ops.env" /etc/starship/nats.env
+    chmod 640 /etc/starship/nats.env 2>/dev/null || true
+  fi
+  # Map profile → default NATS role env
+  local role_env="ops"
+  case "$PROFILE" in
+    edge) role_env="edge" ;;
+    ops) role_env="ops" ;;
+  esac
+  if [[ -n "${STARSHIP_FLEET_TEAM:-}" ]]; then
+    case "${STARSHIP_FLEET_TEAM}" in
+      red) role_env="red" ;;
+      blue) role_env="blue" ;;
+    esac
+  fi
+  if [[ -f "$out/creds/${role_env}.env" ]]; then
+    cp "$out/creds/${role_env}.env" /etc/starship/nats.env
+    chmod 640 /etc/starship/nats.env 2>/dev/null || true
+  fi
+  cat > /etc/starship/fleet.env <<EOF
+STARSHIP_FLEET_PLANT=${STARSHIP_FLEET_PLANT:-$PLANT}
+STARSHIP_FLEET_TEAM=${STARSHIP_FLEET_TEAM:-ops}
+STARSHIP_FLEET_ROLES=${ROLES_CSV}
+STARSHIP_NATS_MODE=accounts
+STARSHIP_NATS_ROLE=${role_env}
+EOF
+  chown nats:nats /var/lib/starship/nats 2>/dev/null || true
+  echo "  active.conf → fleet-accounts (role=${role_env})"
+}
+
+# Bus selection:
+#   STARSHIP_NATS_ACCOUNTS=1  → multi-tenant accounts/nkeys
+#   ops profile or STARSHIP_FLEET_BUS=1 → fleet-bus token
+#   else → agent-bus (local)
+if [[ "${STARSHIP_NATS_ACCOUNTS:-}" == "1" || "${STARSHIP_NATS_ACCOUNTS:-}" == "true" || "${STARSHIP_NATS_MODE:-}" == "accounts" ]]; then
+  _enable_accounts_bus
+elif [[ "$PROFILE" == "ops" || "$ENABLE_FLEET_BUS" == "1" || "$ENABLE_FLEET_BUS" == "true" ]]; then
+  # ops defaults to accounts when generator present; token fleet-bus otherwise
+  if [[ -f "$REPO_DIR/scripts/gen-nats-accounts.sh" && "${STARSHIP_NATS_MODE:-accounts}" == "accounts" ]]; then
+    _enable_accounts_bus
+  else
+    _enable_fleet_bus
+  fi
 else
   _enable_agent_bus
 fi

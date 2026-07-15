@@ -1,0 +1,156 @@
+# Starship OS — multi-tenant NATS accounts (generated)
+# Materialized by scripts/gen-nats-accounts.sh
+# DO NOT commit the materialized file with real secrets.
+#
+# Accounts:
+#   $SYS            — system
+#   STARSHIP_OPS    — full mesh (ops profile / plant-alpha)
+#   STARSHIP_EDGE   — edge plant (limited)
+#   STARSHIP_RANGE  — red/blue range (isolated)
+#   STARSHIP_TELEM  — telemetry publishers only
+
+port: 4222
+host: "0.0.0.0"
+http_port: 8222
+
+jetstream {
+  store_dir: "/var/lib/starship/nats"
+  max_memory_store: 512MB
+  max_file_store: 4GB
+}
+
+max_payload: 8MB
+max_connections: 256
+debug: false
+trace: false
+
+# Resolve system account
+system_account: SYS
+
+accounts {
+  SYS {
+    users: [
+      {user: "sys", password: "__SYS_PASS__"}
+    ]
+  }
+
+  STARSHIP_OPS {
+    jetstream: enabled
+    users: [
+      {user: "ops", password: "__OPS_PASS__"}__OPS_NKEY_LINE__
+    ]
+    exports: [
+      {stream: "starship.fleet.>"}
+      {stream: "starship.agent.>"}
+      {stream: "starship.telemetry.>"}
+      {stream: "agnetic.fleet.>"}
+      {stream: "agnetic.agent.>"}
+      {stream: "agnetic.telemetry.>"}
+    ]
+    imports: [
+      {stream: {account: "STARSHIP_EDGE", subject: "starship.fleet.>"}}
+      {stream: {account: "STARSHIP_EDGE", subject: "agnetic.fleet.>"}}
+      {stream: {account: "STARSHIP_TELEM", subject: "starship.telemetry.>"}}
+      {stream: {account: "STARSHIP_TELEM", subject: "agnetic.telemetry.>"}}
+    ]
+  }
+
+  STARSHIP_EDGE {
+    jetstream: enabled
+    users: [
+      {user: "edge", password: "__EDGE_PASS__"
+       permissions: {
+         publish: {
+           allow: [
+             "starship.fleet.heartbeat"
+             "starship.fleet.register"
+             "starship.fleet.status"
+             "starship.agent.proxy.>"
+             "starship.telemetry.>"
+             "agnetic.fleet.heartbeat"
+             "agnetic.fleet.register"
+             "agnetic.fleet.status"
+             "agnetic.agent.proxy.>"
+             "agnetic.telemetry.>"
+           ]
+         }
+         subscribe: {
+           allow: [
+             "starship.fleet.>"
+             "starship.fleet.ops.>"
+             "starship.agent.proxy.>"
+             "agnetic.fleet.>"
+             "agnetic.agent.proxy.>"
+           ]
+         }
+       }
+      }__EDGE_NKEY_LINE__
+    ]
+    exports: [
+      {stream: "starship.fleet.>"}
+      {stream: "agnetic.fleet.>"}
+    ]
+  }
+
+  STARSHIP_RANGE {
+    # Isolated red/blue plant — no imports from OPS/EDGE
+    users: [
+      {user: "red", password: "__RED_PASS__"
+       permissions: {
+         publish: {
+           allow: [
+             "starship.agent.proxy.>"
+             "starship.fleet.heartbeat"
+             "agnetic.agent.proxy.>"
+             "agnetic.fleet.heartbeat"
+           ]
+         }
+         subscribe: {
+           allow: [
+             "starship.agent.proxy.>"
+             "starship.fleet.exercise"
+             "agnetic.agent.proxy.>"
+             "agnetic.fleet.exercise"
+           ]
+         }
+       }
+      }__RED_NKEY_LINE__
+      {user: "blue", password: "__BLUE_PASS__"
+       permissions: {
+         publish: {
+           allow: [
+             "starship.agent.>"
+             "starship.fleet.heartbeat"
+             "starship.fleet.status"
+             "agnetic.agent.>"
+             "agnetic.fleet.heartbeat"
+             "agnetic.fleet.status"
+           ]
+         }
+         subscribe: {
+           allow: ["starship.>", "agnetic.>"]
+         }
+       }
+      }__BLUE_NKEY_LINE__
+    ]
+  }
+
+  STARSHIP_TELEM {
+    users: [
+      {user: "telem", password: "__TELEM_PASS__"
+       permissions: {
+         publish: {
+           allow: ["starship.telemetry.>", "agnetic.telemetry.>"]
+         }
+         subscribe: {
+           allow: []
+         }
+       }
+      }__TELEM_NKEY_LINE__
+    ]
+    exports: [
+      {stream: "starship.telemetry.>"}
+      {stream: "agnetic.telemetry.>"}
+    ]
+  }
+}

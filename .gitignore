@@ -60,3 +60,7 @@ models/blobs/
 # NATS
 nats/nats-server.pid
 nats/nats-server.log
+nats/creds/
+nats/**/creds/
+**/fleet-accounts.conf
+!nats/fleet-accounts.conf.tmpl

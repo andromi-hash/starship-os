@@ -102,44 +102,50 @@ Enforced by `fleet_policy.check_cross_plant` / `check_tool(..., target_plant=...
 | File | Purpose |
 |------|---------|
 | `nats/agent-bus.conf` | Dev/server/edge — auth disabled, localhost |
-| `nats/fleet-bus.conf` | Ops multi-node — token placeholder + dual-prefix |
-| `nats/fleet-auth.yaml` | Role → subject allow map |
-| `/etc/starship/nats/active.conf` | Symlink to agent-bus or fleet-bus.active |
-| `/etc/starship/nats.env` | `STARSHIP_NATS_TOKEN` + `NATS_URL` for clients |
+| `nats/fleet-bus.conf` | Shared token (trusted LAN) |
+| `nats/fleet-accounts.conf.tmpl` | Multi-tenant accounts template |
+| `scripts/gen-nats-accounts.sh` | Materialize accounts + nkeys + client envs |
+| `nats/fleet-auth.yaml` | Role → account / subject map |
+| `agents/nats_connect.py` | Client helper (user/pass / token / nkey) |
+| `/etc/starship/nats/active.conf` | Symlink to active server conf |
+| `/etc/starship/nats.env` | Client credentials for fleet daemon |
+
+### Modes
+
+| Mode | When | Auth |
+|------|------|------|
+| `agent` | edge/server default | none |
+| `token` | `STARSHIP_NATS_MODE=token` or fleet-bus only | shared `STARSHIP_NATS_TOKEN` |
+| **`accounts`** | **ops firstboot default** | per-role user/pass + optional nkeys |
 
 ```bash
-# Manual multi-node fleet bus
-export STARSHIP_NATS_TOKEN=$(openssl rand -hex 24)
-# firstboot materializes this automatically on ops profile
-nats-server -c /etc/starship/nats/active.conf
-export NATS_URL=nats://127.0.0.1:4222
+# Generate multi-tenant accounts (ops)
+bash scripts/gen-nats-accounts.sh --out /etc/starship/nats
+nats-server -c /etc/starship/nats/fleet-accounts.conf
+set -a; source /etc/starship/nats/creds/ops.env; set +a
 python3 services/fleet.py daemon
 ```
 
-Fleet daemon injects token into URL when `STARSHIP_NATS_TOKEN` is set.  
+Accounts: `STARSHIP_OPS` · `STARSHIP_EDGE` · `STARSHIP_RANGE` (red/blue) · `STARSHIP_TELEM` · `SYS`  
+Nkeys: optional (`nk` from `go install github.com/nats-io/nkeys/nk@latest`) → `creds/*.nk`  
 Heartbeats dual-publish `starship.fleet.heartbeat` + `agnetic.fleet.heartbeat`.
 
-## Firstboot (ops profile → fleet-bus)
+## Firstboot
 
 `scripts/starship-firstboot.sh`:
 
 | Profile | NATS mode | Auth |
 |---------|-----------|------|
 | edge | agent-bus | none |
-| server | agent-bus | none (override: `STARSHIP_FLEET_BUS=1`) |
-| **ops** | **fleet-bus** | token in `/etc/starship/nats-token` + `nats.env` |
+| server | agent-bus | none |
+| **ops** | **accounts** | multi-tenant (`gen-nats-accounts.sh`) |
 
-Ops firstboot also:
-1. Writes `/etc/starship/fleet-node.yaml` + copies `fleet.yaml`
-2. Generates token (or uses `STARSHIP_NATS_TOKEN`)
-3. Materializes `fleet-bus.active.conf` (replaces `__STARSHIP_NATS_TOKEN__`)
-4. Points `active.conf` → fleet-bus; enables `agnetic-nats` + `starship-fleet`
-5. Optional cluster: `STARSHIP_NATS_ROUTES='nats-route://peer:6222'` in `firstboot.env`
+Overrides:
+- `STARSHIP_NATS_ACCOUNTS=1` — force accounts on any profile  
+- `STARSHIP_NATS_MODE=token` + `STARSHIP_FLEET_BUS=1` — shared token fleet-bus  
+- `STARSHIP_NATS_ROUTES=...` — cluster routes (token mode)
 
 ```bash
-# Force fleet-bus on server/edge
-STARSHIP_FLEET_BUS=1 sudo bash scripts/starship-firstboot.sh
-# Ops autoinstall
 STARSHIP_PROFILE=ops sudo bash scripts/starship-firstboot.sh
 ```
 
@@ -149,7 +155,3 @@ STARSHIP_PROFILE=ops sudo bash scripts/starship-firstboot.sh
 - Exercise: `POST /api/fleet/exercise` `{"action":"start"|"stop"}`
 - Register: `POST /api/fleet/register`
 - UI panel **Fleet Map** + Exercise Start/Stop buttons (port 8788)
-
-## Next
-
-- NATS accounts/nkeys for untrusted multi-tenant

@@ -83,6 +83,9 @@ sandbox:
 bench:
 	@bash scripts/bench-sandbox.sh $(or $(N),200)
 
+nats-accounts:
+	@bash scripts/gen-nats-accounts.sh --out $(or $(OUT),nats/creds)
+
 # ─── Smoke tests ────────────────────────────────────────────────────
 smoke:
 	@bash scripts/smoke-test.sh

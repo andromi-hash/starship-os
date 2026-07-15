@@ -1,31 +1,47 @@
 # Starship OS — multi-node NATS fleet auth map
-# Used by fleet daemon + docs; secrets via env, never commit real tokens.
+# Secrets via env / nats/creds (gitignored); never commit real tokens.
 
 version: "2.1"
-mode: token   # token | user_password | disabled (dev agent-bus.conf)
+# mode: disabled | token | accounts
+#   disabled  — agent-bus.conf (dev)
+#   token     — fleet-bus shared token (trusted LAN)
+#   accounts  — multi-tenant accounts + optional nkeys (untrusted multi-tenant)
+mode: accounts
 
-# Connection
 url_env: NATS_URL
 token_env: STARSHIP_NATS_TOKEN
+user_env: NATS_USER
+password_env: NATS_PASSWORD
+nkey_seed_env: STARSHIP_NATS_NKEY_SEED
 default_url: "nats://127.0.0.1:4222"
 
-# Dev token must match nats/fleet-bus.conf (replace in prod)
-dev_token: "starship-fleet-dev-token"
+# Generate: bash scripts/gen-nats-accounts.sh --out /etc/starship/nats
+accounts:
+  SYS:
+    role: sys
+  STARSHIP_OPS:
+    role: ops
+    jetstream: true
+    description: Full mesh — ops / plant-alpha
+  STARSHIP_EDGE:
+    role: edge
+    jetstream: true
+    description: Edge plant limited subjects
+  STARSHIP_RANGE:
+    roles: [red, blue]
+    description: Isolated red/blue exercise plant
+  STARSHIP_TELEM:
+    role: telem
+    description: Telemetry publish-only
 
-# Subject permissions by fleet role (enforced in fleet_policy + optional NATS accounts)
+# Subject permissions by fleet role (mirror of fleet-accounts.conf.tmpl)
 roles:
   ops:
-    publish:
-      - "starship.fleet.>"
-      - "starship.agent.>"
-      - "starship.telemetry.>"
-      - "agnetic.fleet.>"
-      - "agnetic.agent.>"
-      - "agnetic.telemetry.>"
-    subscribe:
-      - "starship.>"
-      - "agnetic.>"
+    account: STARSHIP_OPS
+    publish: ["starship.>", "agnetic.>"]
+    subscribe: ["starship.>", "agnetic.>"]
   plant-controller:
+    account: STARSHIP_EDGE
     publish:
       - "starship.fleet.heartbeat"
       - "starship.fleet.register"
@@ -38,7 +54,7 @@ roles:
       - "starship.fleet.ops.>"
       - "agnetic.fleet.>"
   red-team:
-    # Range plant only — no fleet register outside plant-range
+    account: STARSHIP_RANGE
     publish:
       - "starship.agent.proxy.>"
       - "starship.fleet.heartbeat"
@@ -50,6 +66,7 @@ roles:
       - "agnetic.agent.proxy.>"
       - "agnetic.fleet.exercise"
   blue-team:
+    account: STARSHIP_RANGE
     publish:
       - "starship.agent.>"
       - "starship.fleet.heartbeat"
@@ -61,21 +78,23 @@ roles:
       - "starship.>"
       - "agnetic.>"
   telemetry:
+    account: STARSHIP_TELEM
     publish:
       - "starship.telemetry.>"
       - "agnetic.telemetry.>"
     subscribe: []
 
-# Heartbeat auth: fleet daemon requires token when fleet-bus is active
 heartbeat:
   subject_primary: starship.fleet.heartbeat
   subject_legacy: agnetic.fleet.heartbeat
-  require_token: true
+  require_auth: true
   interval_seconds: 30
 
 production:
   notes:
-    - "Set STARSHIP_NATS_TOKEN from secret store / firstboot"
-    - "Bind host 0.0.0.0 only on trusted fleet LAN or VPN"
-    - "Prefer NATS accounts + nkeys over shared token for untrusted multi-tenant"
-    - "Cluster routes use nats-route:// with TLS when available"
+    - "Ops firstboot defaults to accounts mode (gen-nats-accounts.sh)"
+    - "Creds live in /etc/starship/nats/creds/ (mode 600) — never commit"
+    - "nkeys optional: go install github.com/nats-io/nkeys/nk@latest"
+    - "Clients: source /etc/starship/nats.env or role env (ops/edge/red/blue/telem)"
+    - "Python: agents/nats_connect.py (user/pass; nkey if nkeys package present)"
+    - "Bind 0.0.0.0 only on trusted fleet LAN or VPN; prefer TLS for WAN"

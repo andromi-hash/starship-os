@@ -20,6 +20,8 @@ All notable changes to **Starship OS**.
 - **Ops firstboot fleet-bus** — token materialization, `active.conf`, `nats.env` / `fleet.env`
 - **C11 sandbox bench** — `make bench` / `scripts/bench-sandbox.sh` (p50 ≪ 2ms, ADR 0001)
 - **Native sandbox bridge** — `agents/sandbox_native.py` via `STARSHIP_SANDBOX_NATIVE=1`
+- **NATS multi-tenant accounts** — `fleet-accounts.conf.tmpl`, `gen-nats-accounts.sh`, optional nkeys
+- **nats_connect helper** — user/pass / token / nkey env for fleet clients
 
 ### Changed
 - Product branding strings → Starship OS; debian package `starship-os`

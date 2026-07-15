@@ -30,8 +30,13 @@ check "cross-plant ACL allows alpha→edge" bash -c 'STARSHIP_FLEET_TEAM=ops STA
 check "cross-plant ACL denies alpha→range" bash -c 'STARSHIP_FLEET_TEAM=ops STARSHIP_FLEET_PLANT=plant-alpha PYTHONPATH=agents python3 -c "from fleet_policy import clear_cache,check_cross_plant; clear_cache(); assert check_cross_plant(\"plant-alpha\",\"plant-range\")"'
 check "fleet-bus.conf present" test -f nats/fleet-bus.conf
 check "fleet-auth.yaml present" test -f nats/fleet-auth.yaml
+check "fleet-accounts template" test -f nats/fleet-accounts.conf.tmpl
+check "gen-nats-accounts script" test -f scripts/gen-nats-accounts.sh
+check "nats_connect helper" bash -c 'PYTHONPATH=agents python3 -c "from nats_connect import build_nats_url; assert \"nats://\" in build_nats_url()"'
+check "gen accounts conf valid" bash -c 'export PATH="$HOME/go/bin:/root/go/bin:$PATH"; OUT=$(mktemp -d); bash scripts/gen-nats-accounts.sh --out "$OUT" --port 14222 >/dev/null && nats-server -c "$OUT/fleet-accounts.conf" -t >/dev/null && rm -rf "$OUT"'
 check "firstboot syntax" bash -n scripts/starship-firstboot.sh
 check "firstboot wires fleet-bus for ops" grep -q '_enable_fleet_bus' scripts/starship-firstboot.sh
+check "firstboot wires accounts" grep -q '_enable_accounts_bus' scripts/starship-firstboot.sh
 check "nats unit uses active.conf" grep -q 'active.conf' systemd/agnetic-nats.service
 check "fleet unit loads nats.env" grep -q 'nats.env' systemd/starship-fleet.service
 check "ops profile nats_mode fleet" bash -c 'awk "/^  ops:/{p=1} p&&/nats_mode:/{print; exit}" config/profiles.yaml | grep -q fleet'
