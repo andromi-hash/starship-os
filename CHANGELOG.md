@@ -2,28 +2,24 @@
 
 All notable changes to **Starship OS**.
 
-## [2.1.0-alpha.3] — 2026-07-15
+## [2.1.0-beta.1] — 2026-07-15
 
 ### Added
-- **Cross-plant ACL** — `acl` in `fleet.yaml`; `check_cross_plant` policy engine
-- **NATS fleet-bus** + **multi-tenant accounts/nkeys** — ops firstboot default accounts mode
-- **C11 sandbox bench** (`make bench`, p50 ~0.5ms) + optional `STARSHIP_SANDBOX_NATIVE=1` bridge
-- **nats_connect** helper — user/pass / token / nkey for fleet clients
-- **sandbox_run** installed to `/opt/starship/bin` via install-daemon
-- **NATS TLS** optional — `gen-nats-tls.sh`, `STARSHIP_NATS_TLS=1`
-- **C11 seccomp** allowlist in `sandbox_run` (libseccomp)
-- **C11 namespaces** best-effort NEWNS/NEWPID (`--no-ns` to disable)
-- **ISO firstboot smoke** — `scripts/iso-firstboot-smoke.sh`; autoinstall invokes firstboot
-- **Packaging** — `.deb` / install-daemon ship fleet, accounts, firstboot, sandbox_run
-- **`.deb` layout fix** — proper `opt/`/`etc/` paths (no nested `installed/`); postinst → `/opt/starship`
-- **policyexec** C11 policy gate + `config/policy.default.json` + `policy_native.py`
-- **CI** — smoke + C11 + libseccomp jobs
-- Smoke suite expanded (40+ checks)
+- **Beta** packaging cut of Alpha 2.1 streamline plan (Phases 0–4)
+- Cross-plant ACL, multi-tenant NATS accounts/nkeys, optional TLS
+- C11 `sandbox_run` (seccomp, namespaces) + `policyexec` shared policy JSON
+- Fleet firstboot, ISO autoinstall hooks, `make deb` e2e layout fix
+- Root [`SECURITY.md`](SECURITY.md) + refreshed [`docs/SECURITY.md`](docs/SECURITY.md)
+- README aligned to `/opt/starship`, starshipctl, fleet, dual-prefix NATS
 
 ### Changed
-- Ops profile firstboot: agent-bus → multi-tenant NATS accounts
-- Agent/dashboard/fleet systemd units load `/etc/starship/nats.env`
-- Phase 2 streamline plan complete; Phase 3 packaging started
+- Version line **2.1.0-beta.1**; ops firstboot defaults to NATS accounts
+- systemd units load `/etc/starship/nats.env`
+
+## [2.1.0-alpha.3] — 2026-07-15
+
+Phase 2–3 packaging: fleet ACL, NATS fleet-bus/accounts, C11 bench + seccomp,
+ISO firstboot smoke, deb layout, policyexec spike. Superseded by beta.1.
 
 ## [2.1.0-alpha.2] — 2026-07-15
 

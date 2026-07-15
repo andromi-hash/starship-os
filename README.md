@@ -1,87 +1,75 @@
 # Starship OS
 
 **An AI agent-first operating system built on Ubuntu 24.04 LTS**  
-**Version:** 2.1.0-alpha.3 · **Canonical repo:** [andromi-hash/starship-os](https://github.com/andromi-hash/starship-os)
+**Version:** 2.1.0-beta.1 · **Canonical repo:** [andromi-hash/starship-os](https://github.com/andromi-hash/starship-os)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Platform: Ubuntu 24.04](https://img.shields.io/badge/Platform-Ubuntu%2024.04-orange.svg)](https://ubuntu.com)
 [![NATS/JetStream](https://img.shields.io/badge/Bus-NATS%2FJetStream-green.svg)](https://nats.io)
 [![Ollama GPU](https://img.shields.io/badge/Inference-Ollama%20GPU-red.svg)](https://ollama.com)
-[![Version](https://img.shields.io/badge/version-2.1.0--alpha.3-purple.svg)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.1.0--beta.1-purple.svg)](VERSION)
+[![Security](https://img.shields.io/badge/Security-Policy-red.svg)](SECURITY.md)
 
 Starship OS is a local-first, AI-native OS layer where autonomous agents communicate over NATS/JetStream, execute tools in a sandboxed environment, and present a real-time command-and-control dashboard. No cloud required. Everything runs on your hardware.
 
-**Lineage:** Alpha (`starship-os` scaffold) → Alpha 2.0 ([agnetic-os](https://github.com/andromi-hash/starship-os)) → **Alpha 2.1** (this monorepo: packaging + governance/memory/C2).
+**Lineage:** Alpha scaffold → Alpha 2.0 ([agnetic-os](https://github.com/andromi-hash/agnetic-os) archive) → **Alpha 2.1 / Beta** (this monorepo).
 
-### Alpha 2.1 highlights
+### 2.1 beta highlights
 
-- Default reasoning model: **Eve-V2-Unleashed** (`num_ctx=16384` server default) — see `config/models.yaml`
-- Governance: policy, hooks, Droid Shield, service accounts, OTEL, incidents, self-healing
-- 7-type agent memory + vector search
-- Web C2 dashboard (target port **8788**)
-- OpenCode + [oh-my-opencode-slim](https://github.com/alvinunreal/oh-my-opencode-slim) (shipped integration planned)
-- Streamline plan: `docs/plans/starship-os-streamline.md`
+- **Install roots:** `/opt/starship`, `/etc/starship` (legacy `/opt/agnetic` symlinks)
+- **CLI:** `starshipctl` (compat `agneticctl`) · **Dashboard:** `:8788`
+- **Fleet:** multi-plant topology, red/blue policy, cross-plant ACL, exercise UI
+- **NATS:** dual-prefix `starship.*` / `agnetic.*`; ops multi-tenant accounts + nkeys; optional TLS
+- **C11 path:** `sandbox_run` (seccomp/namespaces), `policyexec` (shared policy JSON)
+- **Packaging:** `make deb` → `dist/starship-os_*.deb`; ISO autoinstall edge/server/ops
+- **Models:** Eve-V2-Unleashed default (`num_ctx=16384`) — `config/models.yaml`
+- **Plan:** `docs/plans/starship-os-streamline.md` · **Security:** [`SECURITY.md`](SECURITY.md)
 
 ---
 
 ## Quick Start
 
 ```bash
-# 1. Start all services in development mode
-make dev
+# Dev mesh (user-level)
+make dev && make status
+make smoke          # 40+ checks
 
-# 2. Verify system status
-make status
-
-# 3. Build a .deb package
-make deb
-
-# 4. Create default model alias (after ollama pull of upstream)
+# Default model alias (after ollama pull of upstream)
 ollama create Eve-V2-Unleashed -f config/models/Eve-V2-Unleashed.Modelfile
+
+# Debian package
+make deb
+sudo dpkg -i dist/starship-os_*.deb
+STARSHIP_PROFILE=ops sudo /opt/starship/bin/starship-firstboot.sh
 ```
 
-Open `http://localhost:8788`. CLI: `starshipctl` (compat: `agneticctl`).
+Open `http://localhost:8788`. CLI: `starshipctl fleet status`.
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    User Interfaces                          │
-│  ┌──────────┐  ┌──────────────┐  ┌────────────────────┐   │
-│  │ CLI      │  │ Dashboard    │  │ agneticctl         │   │
-│  │ (chat)   │  │ (web :8788)  │  │ starshipctl        │   │
-│  └────┬─────┘  └──────┬───────┘  └─────────┬──────────┘   │
-│       └────────────────┼────────────────────┘              │
-│                        │                                    │
-│  ┌─────────────────────┴────────────────────────────────┐  │
-│  │              NATS/JetStream Bus (:4222)              │  │
-│  │  agnetic.agent.{proxy,romi,ergo}.{cmd,event,status}  │  │
-│  │  agnetic.telemetry.{cpu,mem,disk,net}                │  │
-│  │  agnetic.workflow.>  •  agnetic.delegate.>            │  │
-│  └─────┬──────────────┬──────────────┬──────────────────┘  │
-│        │              │              │                       │
-│  ┌─────┴─────┐  ┌─────┴─────┐  ┌────┴──────┐  ┌────────┐ │
-│  │  Proxy    │  │   Romi    │  │   Ergo    │  │ Star   │ │
-│  │ (Python)  │  │ (Python)  │  │ (Python)  │  │ Agent  │ │
-│  │ qwen2.5   │  │ qwen2.5   │  │ Eve-V2    │  │ (Rust) │ │
-│  │ :7b       │  │ :7b       │  │ :8b       │  │        │ │
-│  └─────┬─────┘  └─────┬─────┘  └────┬──────┘  └────────┘ │
-│        └───────────────┼─────────────┘                     │
-│                        │                                    │
-│  ┌─────────────────────┴────────────────────────────────┐  │
-│  │          Ollama Server (localhost:11434)              │  │
-│  │     GPU-Accelerated Inference (NVIDIA / AMD)          │  │
-│  └──────────────────────────────────────────────────────┘  │
-│                                                             │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │  Tool System (sandboxed)          Security Layer     │  │
-│  │  shell • read_file • write_file   AppArmor profiles  │  │
-│  │  list_dir • http_get • http_post   NATS auth         │  │
-│  │  search_files • delegate_to_agent  Encrypted config  │  │
-│  └──────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│  User / OpenCode     Dashboard :8788      starshipctl CLI    │
+└───────────┬──────────────────┬───────────────────┬───────────┘
+            └──────────────────┼───────────────────┘
+                               │
+            ┌──────────────────┴──────────────────┐
+            │   NATS/JetStream  starship.* (+ agnetic.*)
+            │   accounts / token / TLS (ops)       │
+            └──┬──────────┬──────────┬────────────┘
+               │          │          │
+          ┌────┴───┐ ┌────┴───┐ ┌────┴───┐  ┌──────────┐
+          │ Proxy  │ │  Romi  │ │  Ergo  │  │ StarAgent│
+          │ qwen   │ │ qwen   │ │ Eve-V2 │  │  (Rust)  │
+          └────┬───┘ └────┬───┘ └────┬───┘  └────┬─────┘
+               └──────────┼──────────┘           │
+                    Ollama :11434          telemetry
+               ┌──────────┴──────────────────────┐
+               │ Tools: sandbox + policyexec     │
+               │ Fleet ACL · AppArmor · secrets  │
+               └─────────────────────────────────┘
 ```
 
 ---
@@ -90,11 +78,13 @@ Open `http://localhost:8788`. CLI: `starshipctl` (compat: `agneticctl`).
 
 | Component | Language | Description |
 |-----------|----------|-------------|
-| **Agents** | Python | Three AI agents (Proxy, Romi, Ergo) with NATS subscriptions, Ollama inference, and tool-calling loops |
-| **agneticctl** | Go/Cobra | CLI for managing agents, running workflows, chatting with agents, and viewing telemetry |
-| **StarAgent** | Rust | System metrics collector publishing CPU, memory, disk, and network telemetry to NATS every 10 seconds |
-| **Dashboard** | Python/aiohttp + HTML/CSS/JS | Web UI with real-time agent status, GPU monitoring, Ollama model management, SSE chat streaming |
-| **Tool System** | Python | Sandboxed execution engine with 8 tools, 5 toolsets, secret redaction, and auto-repair for malformed tool calls |
+| **Agents** | Python | Proxy, Romi, Ergo — NATS + Ollama tool loops |
+| **starshipctl** | Go/Cobra | CLI (agents, fleet, telemetry, workflows); `agneticctl` symlink |
+| **StarAgent** | Rust | CPU/mem/disk/net → `starship.telemetry` (dual-publish) |
+| **Dashboard** | Python + JS | C2 UI :8788 — agents, chat SSE, fleet map, exercise controls |
+| **Fleet** | Python | Plants, ops manager, red/blue, register/heartbeat |
+| **C11** | C | `sandbox_run`, `policyexec` — optional native isolation |
+| **Tool system** | Python | Sandboxed tools, toolsets, redaction, auto-repair |
 
 ---
 
@@ -139,7 +129,7 @@ Ergo is the CEO. It orchestrates multi-agent workflows, manages scheduled tasks 
 |-------|-------|
 | Language | Rust (async-nats, sysinfo, tokio) |
 | Role | Cross-platform system monitor |
-| Publishes | `agnetic.telemetry` every 10 seconds |
+| Publishes | `starship.telemetry` (+ legacy `agnetic.telemetry`) every 10 seconds |
 
 StarAgent is a standalone Rust binary that collects CPU usage, memory, disk, and network I/O, then publishes JSON telemetry to the NATS bus. No LLM required — pure systems code.
 
@@ -179,10 +169,11 @@ The tool system enforces strict security constraints:
 
 - **Blocked commands**: `rm -rf /`, `mkfs`, `dd`, `shutdown`, `reboot`, and other destructive operations
 - **Privileged commands**: `sudo`, `su`, `chmod 777`, `chown`, `passwd` are denied
-- **Path restrictions**: Read access limited to `/home`, `/tmp`, `/opt/agnetic`, `/etc/agnetic`, `/var/log/agnetic`; write access further restricted to `/tmp`, `/opt/agnetic`, `/var/log/agnetic`
+- **Path restrictions**: Prefer `/opt/starship`, `/etc/starship`, `/tmp`, `/var/log/starship` (legacy agnetic paths still accepted where configured)
 - **Secret redaction**: Passwords, tokens, API keys automatically redacted from output
 - **Timeout enforcement**: 30-second default with process kill on timeout
 - **Output limits**: 50KB max output, 1MB max file size
+- **Optional C11:** `STARSHIP_SANDBOX_NATIVE=1` · `STARSHIP_POLICY_NATIVE=1`
 
 ---
 
@@ -194,6 +185,7 @@ The web dashboard at `http://localhost:8788` provides a real-time command center
 
 - **Crew Manifest**: Live agent status with online/offline indicators, model info, and running state
 - **Communications Hub**: Real-time chat with any agent via SSE streaming (Server-Sent Events)
+- **Fleet Map**: Plants, exercise start/stop, node register (`/api/fleet`)
 - **Telemetry Gauges**: CPU, RAM, Disk, Network ring gauges with auto-coloring
 - **GPU Monitor**: Vendor, name, driver, CUDA version, VRAM usage
 - **Ollama Model Manager**: List, pull, and delete Ollama models from the UI
@@ -216,39 +208,33 @@ The web dashboard at `http://localhost:8788` provides a real-time command center
 | `GET` | `/api/history?limit=50` | Message history |
 | `POST` | `/api/send` | Send command to agent via NATS (body: `{"agent", "command", "args"}`) |
 | `POST` | `/api/chat/stream` | SSE streaming chat (body: `{"agent", "command", "args"}`) |
+| `GET` | `/api/fleet` | Fleet topology / plant map |
+| `POST` | `/api/fleet/exercise` | Start/stop red-blue exercise |
+| `POST` | `/api/fleet/register` | Register this node |
 | `GET` | `/api/health` | System health check |
 
 ---
 
 ## Security
 
-### NATS Authentication
+Full policy: **[SECURITY.md](SECURITY.md)** · architecture: **[docs/SECURITY.md](docs/SECURITY.md)**
 
-NATS is configured with token-based authentication (disabled by default for development). Enable it in `nats/agent-bus.conf`:
+| Layer | Controls |
+|-------|----------|
+| Tools | Sandbox blocklists, path allowlists, redaction |
+| C11 | `sandbox_run` (seccomp/NS), `policyexec` (shared JSON) |
+| Fleet | Red-team tool deny, cross-plant ACL, range isolation |
+| NATS | Dev open / token / multi-tenant accounts+nkeys / optional TLS |
+| OS | systemd hardening, AppArmor profiles, non-root `agnetic` user |
 
-```nats
-authorization {
-  token: "your-secret-token"
-}
+```bash
+# Ops multi-tenant bus + optional TLS
+bash scripts/gen-nats-accounts.sh --out /etc/starship/nats
+STARSHIP_NATS_TLS=1 bash scripts/gen-nats-tls.sh --out /etc/starship/nats/tls
+export STARSHIP_SANDBOX_NATIVE=1 STARSHIP_POLICY_NATIVE=1
 ```
 
-Each agent connects with the configured token via the `NATS_URL` environment variable.
-
-### AppArmor Profiles
-
-Three AppArmor profiles restrict agent capabilities:
-
-- **`agnetic-agent`**: Denies raw sockets, sys_module, sys_ptrace, sys_admin capabilities. Restricts writes to `/home`, `/root`, `/etc` (except `/etc/agnetic`). Limits network to localhost TCP.
-- **`nats`**: Restricts NATS server to its data directory and log paths.
-- **`ollama`**: Constrains Ollama inference server filesystem access.
-
-### Encrypted Configuration
-
-Agent configs and NATS tokens are stored with restricted file permissions. Secrets (`.key`, `.pem`, `.env`, `credentials/`) are gitignored and never committed.
-
-### Sandboxed Tool Execution
-
-All agent tool calls go through the `CommandExecutor` sandbox (see [Tool System](#tool-system)) which enforces command blocking, path restrictions, timeout enforcement, and secret redaction.
+Report vulnerabilities via GitHub Security Advisories (see SECURITY.md) — not public issues.
 
 ---
 
@@ -257,40 +243,40 @@ All agent tool calls go through the `CommandExecutor` sandbox (see [Tool System]
 ### Development Mode (no root required)
 
 ```bash
-make dev      # Start NATS, agents, dashboard, status bridge
-make status   # Verify all services are running
-make stop     # Stop all services
+make dev && make status && make smoke
+make stop
 ```
 
-Dev mode runs everything under your user account with logs written to `logs/`.
+Logs: `logs/`. Dashboard: `http://localhost:8788`.
 
 ### System Install (requires root)
 
 ```bash
 make install
+# or
+make deb && sudo dpkg -i dist/starship-os_*.deb
+STARSHIP_PROFILE=ops sudo /opt/starship/bin/starship-firstboot.sh
 ```
 
-This will:
-1. Create `agnetic` and `nats` system users
-2. Install binaries to `/opt/agnetic/bin/`
-3. Install application code to `/opt/agnetic/lib/agnetic/`
-4. Install configs to `/etc/agnetic/`
-5. Create a Python venv with dependencies
-6. Install and enable systemd service units
-7. Start all services
+Installs to **`/opt/starship`** + **`/etc/starship`** (symlink legacy `/opt/agnetic`).  
+Creates users `agnetic` / `nats`, Python venv, systemd units.
 
-### Debian Package
+### Profiles
+
+| Profile | Intent | NATS (firstboot) |
+|---------|--------|------------------|
+| `edge` | Thin node | agent-bus |
+| `server` | Default mesh | agent-bus |
+| `ops` | Full mesh + fleet | multi-tenant accounts |
+
+### ISO
 
 ```bash
-make deb
-sudo dpkg -i dist/agnet-os_*.deb
+make iso                    # bootable image
+make iso-smoke              # static autoinstall/firstboot checks
 ```
 
-### ISO Image
-
-```bash
-make iso    # Requires root, builds a bootable ISO
-```
+Autoinstall user-data: `iso/autoinstall/user-data.{edge,server,ops}.yaml`.
 
 ---
 
@@ -367,36 +353,30 @@ Supports NVIDIA (CUDA), AMD (ROCm), and CPU-only configurations. Automatically c
 
 | Target | Description |
 |--------|-------------|
-| `make dev` | Start all services in development mode |
-| `make stop` | Stop all running services |
-| `make status` | Show service status and Ollama models |
-| `make build` | Build `agneticctl` binary |
-| `make build-agent` | Build `staragent` Rust binary |
-| `make cli` | Build and install `agneticctl` to `~/.local/bin` |
-| `make install` | Full system install with systemd (root required) |
-| `make uninstall` | Remove system installation |
-| `make deb` | Build Debian package |
-| `make iso` | Build bootable ISO image |
-| `make clean` | Remove build artifacts |
+| `make dev` / `stop` / `status` | Dev mesh lifecycle |
+| `make smoke` | Full smoke suite |
+| `make build` / `build-agent` | Go CLI + Rust StarAgent |
+| `make sandbox` / `policyexec` / `bench` | C11 isolation + policy + timing |
+| `make deb` / `install` | Package / system install |
+| `make iso` / `iso-smoke` | ISO build / firstboot static checks |
+| `make nats-accounts` | Generate multi-tenant NATS creds |
 
-### agneticctl Commands
+### starshipctl Commands
 
 | Command | Description |
 |---------|-------------|
-| `agneticctl version` | Print version |
-| `agneticctl ping` | Ping the NATS bus |
-| `agneticctl agent run <name>` | Start an agent daemon |
-| `agneticctl agent status` | Show agent daemon status |
-| `agneticctl agent stop` | Stop all agent daemons |
-| `agneticctl agent chat <name>` | Interactive chat with an agent |
-| `agneticctl agent send <agent> <command>` | Send command to agent via NATS |
-| `agneticctl telemetry` | Show latest StarAgent telemetry |
-| `agneticctl skill list` | List installed skills |
-| `agneticctl skill show <name>` | Show skill definition |
-| `agneticctl skill trigger <name>` | Trigger a skill via NATS |
-| `agneticctl workflow list` | List available workflows |
-| `agneticctl workflow run <name>` | Run a multi-agent workflow |
-| `agneticctl system health` | Show system health overview |
+| `starshipctl version` | Print version |
+| `starshipctl ping` | Ping the NATS bus |
+| `starshipctl fleet status` | Fleet / plant overview |
+| `starshipctl fleet plants` | List plants |
+| `starshipctl fleet register` | Register this node |
+| `starshipctl fleet exercise start\|stop` | Red/blue exercise |
+| `starshipctl agent …` | Run / status / chat / send |
+| `starshipctl telemetry` | Latest StarAgent telemetry |
+| `starshipctl skill …` / `workflow …` | Skills and workflows |
+| `starshipctl system health` | System health overview |
+
+Compat: `agneticctl` → same binary.
 
 ---
 

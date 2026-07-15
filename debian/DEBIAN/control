@@ -1,5 +1,5 @@
 Package: starship-os
-Version: 2.1.0-alpha.3
+Version: 2.1.0-beta.1
 Section: admin
 Priority: optional
 Architecture: amd64
@@ -8,9 +8,8 @@ Recommends: ollama, nats-server
 Suggests: nvidia-cuda-toolkit | rocm-dev
 Maintainer: Starship OS <ops@starship.os>
 Homepage: https://github.com/andromi-hash/starship-os
-Description: Starship OS
- An AI agent-first operating system. Local AI agents communicate via
- NATS/JetStream message bus with GPU-accelerated inference through Ollama.
- Includes: starshipctl CLI, StarAgent telemetry collector, 3 agent daemons
- (proxy, romi, ergo), web dashboard, and GPU detection.
- Built for Ubuntu 24.04 LTS. Supports NVIDIA and AMD GPUs.
+ Description: Starship OS
+  AI agent-first OS layer for Ubuntu 24.04. Agents on NATS/JetStream with
+  local Ollama inference. Includes starshipctl, StarAgent, Proxy/Romi/Ergo,
+  C2 dashboard :8788, fleet manager, C11 sandbox/policyexec, multi-tenant NATS.
+  Install roots: /opt/starship, /etc/starship.
