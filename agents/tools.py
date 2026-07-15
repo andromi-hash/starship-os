@@ -206,6 +206,18 @@ TOOLSETS = {
         "description": "Safe tools for untrusted input (no shell, no writes)",
         "tools": ["read_file", "list_dir", "search_files", "http_get"],
     },
+    "red_team": {
+        "description": "Red-team exercise tools (no OpenCode, no shell/write)",
+        "tools": ["read_file", "list_dir", "search_files", "http_get", "delegate_to_agent"],
+    },
+    "blue_team": {
+        "description": "Blue-team defensive tools (diagnostics, no OpenCode on range)",
+        "includes": ["core", "network", "delegation"],
+    },
+    "security_audit": {
+        "description": "Security audit toolset for red-team constrained use",
+        "tools": ["read_file", "list_dir", "search_files", "http_get"],
+    },
 }
 
 
@@ -226,6 +238,18 @@ def resolve_toolset(name: str) -> list:
 def get_tool_definitions(toolset: str = "full") -> list:
     """Get Ollama-compatible tool definitions for a toolset."""
     allowed = set(resolve_toolset(toolset))
+    try:
+        from fleet_policy import filter_toolset, current_context
+        ctx = current_context()
+        # Auto-select red/blue toolsets from fleet context
+        if (ctx.get("team") or "").lower() == "red" or "red-team" in [r.lower() for r in ctx.get("roles", [])]:
+            allowed = set(resolve_toolset("red_team"))
+        elif (ctx.get("team") or "").lower() == "blue" or "blue-team" in [r.lower() for r in ctx.get("roles", [])]:
+            if toolset == "full":
+                allowed = set(resolve_toolset("blue_team"))
+        allowed = set(filter_toolset(list(allowed), ctx))
+    except ImportError:
+        pass
     return [t for t in TOOL_DEFINITIONS if t["function"]["name"] in allowed]
 
 
@@ -564,6 +588,18 @@ async def execute_tool(name: str, arguments: dict, nats=None, callbacks: dict = 
 
     # Auto-repair arguments (Hermes pattern)
     arguments = repair_tool_arguments(arguments, name)
+
+    # Fleet red/blue policy (never unrestricted OpenCode for red-team)
+    try:
+        from fleet_policy import check_tool
+        denial = check_tool(name)
+        if denial:
+            result = {"error": True, "message": denial, "policy": "fleet"}
+            if "tool_complete" in callbacks:
+                callbacks["tool_complete"](name, result)
+            return result
+    except ImportError:
+        pass
 
     # Emit tool start (Hermes callback pattern)
     if "tool_start" in callbacks:

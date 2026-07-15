@@ -133,6 +133,14 @@ body::before{
 .agent-model{color:var(--color-accent)}
 .agent-status{font-size:0.65rem;color:var(--color-success)}
 .agent-status.idle{color:var(--color-text-muted)}
+.plant-card{padding:8px 10px;border-radius:var(--radius-sm);border:1px solid var(--color-glass-edge);margin-bottom:6px;background:var(--color-glass)}
+.plant-card.isolated{border-color:rgba(212,96,96,0.35)}
+.plant-name{font-size:0.8rem;font-weight:600;color:var(--color-primary)}
+.plant-meta{font-size:0.65rem;color:var(--color-text-muted);margin-top:2px;display:flex;flex-wrap:wrap;gap:6px}
+.plant-badge{font-size:0.6rem;padding:1px 6px;border-radius:999px;background:rgba(123,200,228,0.12);color:var(--color-primary)}
+.plant-badge.alert{background:rgba(212,96,96,0.15);color:var(--color-alert)}
+.plant-badge.warn{background:rgba(212,160,96,0.15);color:var(--color-warning)}
+.exercise-banner{font-size:0.7rem;color:var(--color-warning);margin-bottom:6px}
 
 /* Logs */
 .log-controls{display:flex;gap:6px;padding:4px 0 6px;flex-shrink:0}
@@ -464,7 +472,11 @@ body::before{
       <div class="panel-title">Crew Manifest</div>
       <div class="panel-scroll" id="agent-list"></div>
     </div>
-    <div class="glass" style="display:flex;flex-direction:column;flex-shrink:0;max-height:220px">
+    <div class="glass" style="display:flex;flex-direction:column;flex-shrink:0;max-height:200px">
+      <div class="panel-title">Fleet Map</div>
+      <div class="panel-scroll" id="fleet-map" style="max-height:160px"></div>
+    </div>
+    <div class="glass" style="display:flex;flex-direction:column;flex-shrink:0;max-height:180px">
       <div class="panel-title">Ship Logs</div>
       <div class="log-controls">
         <select id="log-agent-select" onchange="loadLogs()"><option value="">All Agents</option></select>
@@ -646,7 +658,39 @@ function getAgentColor(name) {
   return 'var(--color-text-muted)';
 }
 
+async function refreshFleet() {
+  const data = await fetchJSON('/api/fleet');
+  const el = document.getElementById('fleet-map');
+  if (!el) return;
+  if (!data || data.error) {
+    el.innerHTML = '<div class="plant-meta">Fleet offline</div>';
+    return;
+  }
+  let html = '';
+  const ex = data.exercise || {};
+  if (ex.active) {
+    html += `<div class="exercise-banner">EXERCISE ACTIVE — ${escapeHTML(ex.plant || 'range')}</div>`;
+  }
+  for (const p of (data.plants || [])) {
+    const iso = p.isolation ? ' isolated' : '';
+    html += `<div class="plant-card${iso}">
+      <div class="plant-name">${escapeHTML(p.name || p.id)}</div>
+      <div class="plant-meta">
+        <span class="plant-badge">${escapeHTML(p.profile || '?')}</span>
+        <span class="plant-badge">${p.node_count || 0} node(s)</span>
+        ${p.isolation ? '<span class="plant-badge alert">isolated</span>' : ''}
+        <span>${escapeHTML(p.region || '')}</span>
+      </div>
+    </div>`;
+  }
+  if (!(data.plants || []).length) {
+    html += '<div class="plant-meta">No plants configured</div>';
+  }
+  el.innerHTML = html;
+}
+
 async function refresh() {
+  refreshFleet();
   const data = await fetchJSON('/api/dashboard');
   if (!data) return;
 

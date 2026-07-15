@@ -1,6 +1,23 @@
 # Changelog
 
-All notable changes to **Starship OS** (formerly Starship OS).
+All notable changes to **Starship OS**.
+
+## [2.1.0-alpha.2] — 2026-07-15
+
+### Added
+- **starshipctl** CLI rename (compat `agneticctl` symlink) + `/opt/starship` install roots
+- **Dashboard** default port **8788**; systemd units on starship paths
+- **OpenCode vendoring** — opencode-ai 1.18.2 + oh-my-opencode-slim 2.2.2 pins/tarballs
+- **NATS dual-publish** — `starship.*` primary + `agnetic.*` legacy
+- **Hardware profiles** — edge / server / ops (`config/profiles.yaml`, `select-profile.sh`)
+- **C11 sandbox spike** — ADR 0001 + `src/c/sandbox_spike/sandbox_run`
+- **ISO autoinstall** stubs for edge/server/ops
+- **Fleet manager** — plants, ops manager, red/blue (`config/fleet.yaml`, `services/fleet.py`, `starshipctl fleet`)
+- **Dashboard fleet map** — `/api/fleet` + plant map panel
+- **Red-team policy** — `fleet_policy.py` denies OpenCode/shell/write for red-team
+
+### Changed
+- Product branding strings → Starship OS; debian package `starship-os`
 
 ## [2.1.0-alpha.1] — 2026-07-15
 

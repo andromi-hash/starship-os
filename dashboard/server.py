@@ -19,7 +19,11 @@ NATS_URL = os.getenv("NATS_URL", "nats://127.0.0.1:4222")
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434")
 PORT = int(os.getenv("DASHBOARD_PORT", os.getenv("AGNETIC_DASHBOARD_PORT", "8788")))
 STATUS_FILE = Path("/tmp/agnetic-status.json")
-GPU_STATE = Path("/tmp/agnetic-gpu-state.json")
+GPU_STATE = Path(os.getenv("STARSHIP_GPU_STATE", "/tmp/starship-gpu-state.json"))
+if not GPU_STATE.exists():
+    _legacy_gpu = Path("/tmp/agnetic-gpu-state.json")
+    if _legacy_gpu.exists():
+        GPU_STATE = _legacy_gpu
 HISTORY_DIR = Path("/tmp/agnetic-history")
 PROJECT_DIR = Path(os.getenv("AGNETIC_ROOT", os.path.dirname(os.path.abspath(__file__)).replace("/dashboard", "")))
 
@@ -824,6 +828,79 @@ async def handle_health(request):
     })
 
 
+def _load_fleet_bundle() -> dict:
+    """Assemble fleet topology + runtime state for the plant map."""
+    import yaml as _yaml
+
+    cfg_paths = [
+        Path("/etc/starship/fleet.yaml"),
+        PROJECT_DIR / "config" / "fleet.yaml",
+    ]
+    cfg = {}
+    for p in cfg_paths:
+        if p.exists():
+            try:
+                cfg = _yaml.safe_load(p.read_text()) or {}
+                break
+            except Exception:
+                pass
+
+    state = {"nodes": {}, "exercise": {"active": False}}
+    for sp in (
+        Path("/var/lib/starship/fleet-state.json"),
+        Path("/tmp/starship-fleet/fleet-state.json"),
+    ):
+        if sp.exists():
+            try:
+                state = json.loads(sp.read_text())
+                break
+            except Exception:
+                pass
+
+    plants = cfg.get("plants", {})
+    nodes = state.get("nodes", {})
+    # group nodes by plant
+    by_plant = {pid: [] for pid in plants}
+    for nid, n in nodes.items():
+        plant = n.get("plant") or "unknown"
+        by_plant.setdefault(plant, []).append(n)
+
+    plant_list = []
+    for pid, pmeta in plants.items():
+        plant_list.append({
+            "id": pid,
+            "name": pmeta.get("name", pid),
+            "profile": pmeta.get("profile"),
+            "region": pmeta.get("region"),
+            "isolation": bool(pmeta.get("isolation")),
+            "roles_allowed": pmeta.get("roles_allowed", []),
+            "nodes": by_plant.get(pid, []),
+            "node_count": len(by_plant.get(pid, [])),
+        })
+
+    return {
+        "fleet": cfg.get("fleet", {}).get("name", "starship-fleet"),
+        "plants": plant_list,
+        "nodes": list(nodes.values()),
+        "exercise": state.get("exercise", {}),
+        "updated": state.get("updated"),
+        "timestamp": datetime.now().isoformat(),
+    }
+
+
+async def handle_api_fleet(request):
+    try:
+        return web.json_response(_load_fleet_bundle())
+    except Exception as e:
+        log.exception("fleet api error")
+        return web.json_response({"error": str(e)}, status=500)
+
+
+async def handle_api_fleet_plants(request):
+    data = _load_fleet_bundle()
+    return web.json_response({"plants": data.get("plants", [])})
+
+
 app = web.Application()
 app.router.add_get("/", handle_index)
 app.router.add_get("/api/dashboard", handle_api_dashboard)
@@ -839,6 +916,8 @@ app.router.add_get("/api/history", handle_history)
 app.router.add_post("/api/send", handle_send)
 app.router.add_post("/api/chat/stream", handle_chat_stream)
 app.router.add_get("/api/health", handle_health)
+app.router.add_get("/api/fleet", handle_api_fleet)
+app.router.add_get("/api/fleet/plants", handle_api_fleet_plants)
 
 app.router.add_get("/marketplace", handle_marketplace_page)
 app.router.add_get("/api/marketplace/search", handle_marketplace_search)
@@ -857,5 +936,5 @@ async def cleanup(app):
 app.on_shutdown.append(cleanup)
 
 if __name__ == "__main__":
-    log.info("Agnetic Dashboard starting on http://0.0.0.0:%d", PORT)
+    log.info("Starship Dashboard starting on http://0.0.0.0:%d", PORT)
     web.run_app(app, host="0.0.0.0", port=PORT)

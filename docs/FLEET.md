@@ -70,11 +70,17 @@ node:
 ## Red/blue policy notes
 
 - Exercises default to `plant-range` (`isolation: true`).
-- Red-team never gets unrestricted OpenCode (see `docs/plans/alpha-2.1-addendum.md`).
-- Cross-plant red traffic denied by default (enforce in policy engine Phase 2).
+- Red-team never gets unrestricted OpenCode (enforced in `agents/fleet_policy.py` + toolsets `red_team` / `security_audit`).
+- Red-team allowed tools: `read_file`, `list_dir`, `search_files`, `http_get`, `delegate_to_agent`.
+- Set identity via env: `STARSHIP_FLEET_TEAM=red` `STARSHIP_FLEET_ROLES=red-team` or `/etc/starship/fleet-node.yaml`.
+
+## Dashboard
+
+- Plant map: `GET /api/fleet` · `GET /api/fleet/plants`
+- UI panel **Fleet Map** on the main dashboard (port 8788).
 
 ## Next
 
 - Wire fleet register into `install-daemon` / firstboot
-- Dashboard plant map panel
-- Policy engine enforcement for red-team toolsets
+- Cross-plant ACL in policy engine
+- Dashboard exercise start/stop controls

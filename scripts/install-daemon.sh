@@ -165,6 +165,12 @@ if [[ -f "$REPO_DIR/services/fleet.py" ]]; then
     cp "$REPO_DIR/services/fleet.py" /opt/starship/lib/starship/services/
     chmod +x /opt/starship/lib/starship/services/fleet.py
 fi
+if [[ -f "$REPO_DIR/agents/fleet_policy.py" ]]; then
+    cp "$REPO_DIR/agents/fleet_policy.py" /opt/starship/lib/starship/agents/ 2>/dev/null || true
+fi
+if [[ -f "$REPO_DIR/agents/tools.py" ]]; then
+    cp "$REPO_DIR/agents/tools.py" /opt/starship/lib/starship/agents/ 2>/dev/null || true
+fi
 if [[ -f "$REPO_DIR/systemd/starship-fleet.service" ]]; then
     cp "$REPO_DIR/systemd/starship-fleet.service" /etc/systemd/system/ 2>/dev/null || true
 fi
