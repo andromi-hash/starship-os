@@ -53,6 +53,12 @@ check "C11 sandbox builds" bash -c 'make -C src/c/sandbox_spike clean all >/dev/
 check "C11 sandbox echo" bash -c './src/c/sandbox_spike/sandbox_run --timeout 2 -- /bin/echo ok 2>/dev/null | grep -q ok'
 check "C11 sandbox denies mount" bash -c './src/c/sandbox_spike/sandbox_run -- mount >/dev/null 2>&1; test $? -eq 126'
 check "C11 sandbox has seccomp" bash -c './src/c/sandbox_spike/sandbox_run --help 2>&1 | grep -q built-in'
+check "policyexec builds" bash -c 'make -C src/c/policyexec all >/dev/null 2>&1'
+check "policyexec denies opencode" bash -c './src/c/policyexec/policyexec --policy config/policy.default.json check-tool opencode >/dev/null; test $? -eq 1'
+check "policyexec blocks mount" bash -c './src/c/policyexec/policyexec --policy config/policy.default.json check-command mount >/dev/null; test $? -eq 1'
+check "policyexec red-team deny shell" bash -c './src/c/policyexec/policyexec --policy config/policy.default.json --role red-team check-tool shell >/dev/null; test $? -eq 1'
+check "policy_native import" bash -c 'PYTHONPATH=agents python3 -c "from policy_native import policyexec_binary; assert policyexec_binary()"'
+check "policy.default.json present" test -f config/policy.default.json
 check "iso firstboot smoke" bash -c 'bash scripts/iso-firstboot-smoke.sh >/dev/null'
 check "bench-sandbox script" test -x scripts/bench-sandbox.sh -o -f scripts/bench-sandbox.sh
 check "sandbox_native import" bash -c 'PYTHONPATH=agents python3 -c "from sandbox_native import sandbox_binary,native_enabled; assert sandbox_binary()"'

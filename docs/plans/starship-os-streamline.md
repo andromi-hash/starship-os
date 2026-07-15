@@ -71,7 +71,7 @@
 - [x] install-daemon + firstboot install gen scripts; ops enables `STARSHIP_SANDBOX_NATIVE=1`
 - [x] CI: smoke + C11 + nats-server + libseccomp
 - [x] End-to-end `make deb` — fixed pkgroot layout, postinst, install verified
-- [ ] policyexec C11 spike (policy JSON shared with Python)
+- [x] policyexec C11 spike (`src/c/policyexec`, `config/policy.default.json`, `policy_native.py`)
 - [ ] Alpha 2.1 beta tag when packaging green
 
 ## Language map

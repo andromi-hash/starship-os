@@ -89,6 +89,15 @@ Run: `make bench` or `bash scripts/bench-sandbox.sh 200`
 - Enable: `STARSHIP_SANDBOX_NATIVE=1` (used by `CommandExecutor` in `agents/tools.py`)
 - Binary discovery: `STARSHIP_SANDBOX_RUN`, `PATH`, `/opt/starship/bin/sandbox_run`, repo spike path
 
+## policyexec (Phase 4)
+
+- Binary: `src/c/policyexec/policyexec`
+- Shared JSON: `config/policy.default.json` → `/etc/starship/policy.json`
+- CLI: `check-tool` · `check-command` · `run` · `list`
+- Role overlay: `--role red-team` (or `STARSHIP_FLEET_ROLES`)
+- Python: `agents/policy_native.py` via `STARSHIP_POLICY_NATIVE=1`
+- Contract: same deny/allow/blocklist arrays as Python `PolicyManager` / fleet roles
+
 ## References
 
 - `src/c/README.md`

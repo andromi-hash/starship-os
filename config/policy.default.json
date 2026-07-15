@@ -1,0 +1,50 @@
+{
+  "version": "2.1",
+  "description": "Shared policy contract — Python PolicyManager + C11 policyexec",
+  "tools": {
+    "deny": [
+      "opencode",
+      "opendesign"
+    ],
+    "allow": []
+  },
+  "commands": {
+    "blocklist": [
+      "mount",
+      "umount",
+      "reboot",
+      "shutdown",
+      "mkfs",
+      "dd",
+      "iptables",
+      "nft"
+    ],
+    "allowlist": []
+  },
+  "roles": {
+    "red-team": {
+      "tools": {
+        "allow": [
+          "read_file",
+          "list_dir",
+          "search_files",
+          "http_get",
+          "delegate_to_agent"
+        ],
+        "deny": [
+          "opencode",
+          "opendesign",
+          "write_file",
+          "shell",
+          "http_post"
+        ]
+      }
+    },
+    "ops": {
+      "tools": {
+        "allow": [],
+        "deny": []
+      }
+    }
+  }
+}

@@ -16,6 +16,7 @@ All notable changes to **Starship OS**.
 - **ISO firstboot smoke** — `scripts/iso-firstboot-smoke.sh`; autoinstall invokes firstboot
 - **Packaging** — `.deb` / install-daemon ship fleet, accounts, firstboot, sandbox_run
 - **`.deb` layout fix** — proper `opt/`/`etc/` paths (no nested `installed/`); postinst → `/opt/starship`
+- **policyexec** C11 policy gate + `config/policy.default.json` + `policy_native.py`
 - **CI** — smoke + C11 + libseccomp jobs
 - Smoke suite expanded (40+ checks)
 

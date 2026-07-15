@@ -43,6 +43,9 @@ fi
 if [[ ! -x "$REPO_DIR/src/c/sandbox_spike/sandbox_run" ]]; then
     make -C "$REPO_DIR/src/c/sandbox_spike" all 2>/dev/null || true
 fi
+if [[ ! -x "$REPO_DIR/src/c/policyexec/policyexec" ]]; then
+    make -C "$REPO_DIR/src/c/policyexec" all 2>/dev/null || true
+fi
 
 # ─── Assemble package root ──────────────────────────────────────────
 rm -rf "$PKG_ROOT"
@@ -86,6 +89,12 @@ if [[ -x "$REPO_DIR/src/c/sandbox_spike/sandbox_run" ]]; then
     cp "$REPO_DIR/src/c/sandbox_spike/sandbox_run" "$PKG_ROOT/opt/starship/bin/"
     ln -sf /opt/starship/bin/sandbox_run "$PKG_ROOT/usr/local/bin/sandbox_run"
 fi
+if [[ -x "$REPO_DIR/src/c/policyexec/policyexec" ]]; then
+    cp "$REPO_DIR/src/c/policyexec/policyexec" "$PKG_ROOT/opt/starship/bin/"
+    ln -sf /opt/starship/bin/policyexec "$PKG_ROOT/usr/local/bin/policyexec"
+fi
+cp "$REPO_DIR/config/policy.default.json" "$PKG_ROOT/etc/starship/policy.json" 2>/dev/null || true
+cp "$REPO_DIR/agents/policy_native.py" "$PKG_ROOT/opt/starship/lib/starship/agents/" 2>/dev/null || true
 
 # Python / services
 cp "$REPO_DIR/agents/agent_daemon.py" "$PKG_ROOT/opt/starship/lib/starship/agents/"

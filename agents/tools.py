@@ -140,6 +140,20 @@ class CommandExecutor:
             log.info("[DRY RUN] Would execute: %s", redact(command))
             return ExecuteResult(exit_code=0, stdout=f"[DRY RUN] {command}", command=command)
 
+        # Optional C11 policyexec (shared policy JSON) — STARSHIP_POLICY_NATIVE=1
+        try:
+            from policy_native import native_enabled as policy_native_on, check_command as policy_check_cmd
+            if policy_native_on():
+                denial = await asyncio.to_thread(policy_check_cmd, command)
+                if denial:
+                    raise SandboxError(denial, command)
+        except SandboxError:
+            raise
+        except ImportError:
+            pass
+        except Exception as e:
+            log.debug("native policy fallback: %s", e)
+
         # Optional C11 sandbox_run (ADR 0001) — STARSHIP_SANDBOX_NATIVE=1
         try:
             from sandbox_native import native_enabled, run_shell_native
@@ -623,6 +637,21 @@ async def execute_tool(name: str, arguments: dict, nats=None, callbacks: dict = 
             return result
     except ImportError:
         pass
+
+    # Optional C11 policyexec tool gate — STARSHIP_POLICY_NATIVE=1
+    try:
+        from policy_native import native_enabled as policy_native_on, check_tool as policy_check_tool
+        if policy_native_on():
+            denial = policy_check_tool(name)
+            if denial:
+                result = {"error": True, "message": denial, "policy": "policyexec"}
+                if "tool_complete" in callbacks:
+                    callbacks["tool_complete"](name, result)
+                return result
+    except ImportError:
+        pass
+    except Exception as e:
+        log.debug("policyexec tool check fallback: %s", e)
 
     # Emit tool start (Hermes callback pattern)
     if "tool_start" in callbacks:
