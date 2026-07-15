@@ -97,7 +97,7 @@ Open `http://localhost:8788`. CLI: `starshipctl fleet status`.
 | Model | `qwen2.5:7b` |
 | Role | Tech agent — system diagnostics, troubleshooting, security audits |
 | Skills | `system-health`, `proxy-diagnostics` |
-| Personality | Red/blue team security engineer. Dry wit, calm precision, relentless hardening. Think Jarvis meets Harper. |
+| Personality | Red/blue team security engineer. Dry wit, calm precision, relentless hardening. |
 
 Proxy handles the hard, iterative, security-critical work. It runs system diagnostics, scans logs, manages processes, and performs red-team attack simulation with blue-team hardening.
 
