@@ -163,7 +163,7 @@ function renderDownloadSection(info) {
         <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--color-glass-edge)">
           <div style="font-size:11px;color:var(--color-text-muted);margin-bottom:6px">Or install with a single command:</div>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
-            <code id="install-cmd" class="mono" style="flex:1;font-size:12px;background:var(--color-glass);padding:8px 12px;border-radius:6px;border:1px solid var(--color-glass-edge);word-break:break-all">curl -fsSL https://raw.githubusercontent.com/andromi-hash/starship-os/master/scripts/install-agent-linux.sh | bash -s -- --nats-url ${escapeHtml(natsUrl)} --nats-token ${escapeHtml(token)}</code>
+            <code id="install-cmd" class="mono" style="flex:1;font-size:12px;background:var(--color-glass);padding:8px 12px;border-radius:6px;border:1px solid var(--color-glass-edge);word-break:break-all">curl -fsSL https://raw.githubusercontent.com/andromi-hash/starship-os/master/scripts/install-agent-linux.sh | bash -s -- --nats-url ${escapeHtml(natsUrl)} --nats-token ${escapeHtml(token)} --download-url ${escapeHtml(window.location.origin)}/api/agent/download</code>
             <button class="btn btn-secondary" style="padding:6px 14px;font-size:12px;flex-shrink:0" onclick="copyInstallCmd()">Copy</button>
           </div>
         </div>

@@ -22,16 +22,18 @@ NATS_TOKEN=""
 HOSTNAME=""
 SKIP_BINARY=false
 BINARY_SOURCE=""
+DOWNLOAD_BASE_URL=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --nats-url)    NATS_URL="$2"; shift 2 ;;
-        --nats-token)  NATS_TOKEN="$2"; shift 2 ;;
-        --hostname)    HOSTNAME="$2"; shift 2 ;;
-        --skip-binary) SKIP_BINARY=true; shift ;;
-        --binary)      BINARY_SOURCE="$2"; shift 2 ;;
-        --help)        echo "Usage: $0 --nats-url <url> --nats-token <token> [--hostname <name>] [--binary <path>]"; exit 0 ;;
-        *)             err "Unknown argument: $1 (use --help)" ;;
+        --nats-url)       NATS_URL="$2"; shift 2 ;;
+        --nats-token)     NATS_TOKEN="$2"; shift 2 ;;
+        --hostname)       HOSTNAME="$2"; shift 2 ;;
+        --skip-binary)    SKIP_BINARY=true; shift ;;
+        --binary)         BINARY_SOURCE="$2"; shift 2 ;;
+        --download-url)   DOWNLOAD_BASE_URL="$2"; shift 2 ;;
+        --help)           echo "Usage: $0 --nats-url <url> --nats-token <token> [--hostname <name>] [--binary <path>] [--download-url <url>]"; exit 0 ;;
+        *)                err "Unknown argument: $1 (use --help)" ;;
     esac
 done
 
@@ -73,14 +75,19 @@ elif [[ -n "$BINARY_SOURCE" ]]; then
 else
     # Determine download URL
     case "$OS $ARCH" in
-        "Linux x86_64")  BINARY="staragent-linux-x86_64" ;;
-        "Linux aarch64") BINARY="staragent-linux-aarch64" ;;
-        "Linux armv7l")  BINARY="staragent-linux-armv7" ;;
+        "Linux x86_64")  BINARY="staragent-linux-x86_64"; PLATFORM="linux" ;;
+        "Linux aarch64") BINARY="staragent-linux-aarch64"; PLATFORM="linux" ;;
+        "Linux armv7l")  BINARY="staragent-linux-armv7";  PLATFORM="linux" ;;
         *) err "Unsupported platform: $OS $ARCH" ;;
     esac
 
-    DOWNLOAD_URL="https://github.com/andromi-hash/starship-os/releases/latest/download/${BINARY}.tar.gz"
-    log "Downloading staragent from GitHub releases..."
+    if [[ -n "$DOWNLOAD_BASE_URL" ]]; then
+        DOWNLOAD_URL="${DOWNLOAD_BASE_URL}/${PLATFORM}?token=${NATS_TOKEN}"
+        log "Downloading staragent from hub..."
+    else
+        DOWNLOAD_URL="https://github.com/andromi-hash/starship-os/releases/latest/download/${BINARY}.tar.gz"
+        log "Downloading staragent from GitHub releases..."
+    fi
     log "  $DOWNLOAD_URL"
 
     mkdir -p "$INSTALL_DIR/bin"
