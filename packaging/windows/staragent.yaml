@@ -1,0 +1,22 @@
+# Starship OS — StarAgent Configuration (Windows)
+# Installed to C:\Program Files\Starship\Agent\staragent.yaml
+
+nats:
+  url: "__STARSHIP_NATS_URL__"
+  token: "__STARSHIP_NATS_TOKEN__"
+
+telemetry:
+  interval_secs: 10
+
+# osquery support is optional; uncomment and set paths if osqueryd is installed
+# osquery:
+#   binary: "C:\\Program Files\\osquery\\osqueryd.exe"
+#   config_path: "C:\\Program Files\\Starship\\Agent\\osquery.conf"
+#   result_log: "C:\\ProgramData\\Starship\\logs\\osquery_results.jsonl"
+
+commands:
+  subscribe:
+    - "starship.agent.staragent.command.>"
+    - "agnetic.agent.staragent.command.>"
+
+# hostname: "desktop-01"           # override; defaults to Windows computer name
