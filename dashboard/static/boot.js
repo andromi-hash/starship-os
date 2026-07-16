@@ -45,6 +45,7 @@ async function refreshActiveView() {
     else if (view === 'agents') await renderAgentView(target);
     else if (view === 'fleet') await renderFleetView(target);
     else if (view === 'incidents') await renderIncidentsView(target);
+    else if (view === 'connect') await renderConnectView(target);
     else if (view === 'shield') await renderShieldView(target);
   } catch (e) {
     console.error('refresh view', view, e);

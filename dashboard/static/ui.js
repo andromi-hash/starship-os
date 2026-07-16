@@ -126,6 +126,7 @@ function renderView(view) {
     case 'fleet': renderFleetView(target); break;
     case 'chat': renderChatView(target); break;
     case 'incidents': renderIncidentsView(target); break;
+    case 'connect': renderConnectView(target); break;
     case 'shield': renderShieldView(target); break;
     case 'policy':
     case 'memory':
