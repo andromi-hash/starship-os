@@ -140,11 +140,17 @@ function renderDownloadSection(info) {
         <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
           <div style="flex:1;min-width:200px">
             <div style="font-size:11px;color:var(--color-text-muted);margin-bottom:4px">NATS Hub URL</div>
-            <code class="mono" style="font-size:13px;background:var(--color-glass);padding:6px 10px;border-radius:6px;border:1px solid var(--color-glass-edge);display:inline-block">${escapeHtml(natsUrl)}</code>
+            <div style="display:flex;gap:4px;align-items:center">
+              <code class="mono" style="font-size:13px;background:var(--color-glass);padding:6px 10px;border-radius:6px;border:1px solid var(--color-glass-edge);flex:1">${escapeHtml(natsUrl)}</code>
+              <span style="cursor:pointer;font-size:16px;padding:4px;border-radius:4px;opacity:0.7" title="Copy NATS URL" data-value="${escapeHtml(natsUrl)}" onclick="copyValue(this.dataset.value)" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">📋</span>
+            </div>
           </div>
           <div style="flex:1;min-width:200px">
             <div style="font-size:11px;color:var(--color-text-muted);margin-bottom:4px">Agent Token</div>
-            <code class="mono" style="font-size:13px;background:var(--color-glass);padding:6px 10px;border-radius:6px;border:1px solid var(--color-glass-edge);display:inline-block">${escapeHtml(token.substring(0, 16))}…</code>
+            <div style="display:flex;gap:4px;align-items:center">
+              <code class="mono" style="font-size:13px;background:var(--color-glass);padding:6px 10px;border-radius:6px;border:1px solid var(--color-glass-edge);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(token)}">${escapeHtml(token.substring(0, 24))}…</code>
+              <span style="cursor:pointer;font-size:16px;padding:4px;border-radius:4px;opacity:0.7" title="Copy token" data-value="${escapeHtml(token)}" onclick="copyValue(this.dataset.value)" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">📋</span>
+            </div>
           </div>
           <button class="btn btn-secondary" style="padding:6px 14px;font-size:12px" onclick="regenerateToken()">Regenerate Token</button>
         </div>
@@ -185,20 +191,24 @@ async function regenerateToken() {
   }
 }
 
+function copyValue(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('Copied to clipboard', 2000, 'success');
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('Copied to clipboard', 2000, 'success');
+  });
+}
+
 function copyInstallCmd() {
   const el = document.getElementById('install-cmd');
   if (!el) return;
-  navigator.clipboard.writeText(el.textContent).then(() => {
-    showToast('Install command copied to clipboard', 2000, 'success');
-  }).catch(() => {
-    // Fallback for older browsers
-    const sel = window.getSelection();
-    const range = document.createRange();
-    range.selectNodeContents(el);
-    sel.removeAllRanges();
-    sel.addRange(range);
-    document.execCommand('copy');
-    sel.removeAllRanges();
-    showToast('Install command copied', 2000, 'success');
-  });
+  copyValue(el.textContent);
 }
