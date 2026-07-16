@@ -1,21 +1,35 @@
-/* Shield — multi-node telemetry from remote agents */
+/* Shield — multi-node telemetry + agent deployment */
 
 async function renderShieldView(area) {
   showLoading(area);
-  const data = await api('/api/shield/stats');
-  if (!data || data.status === 'no_data') {
-    showNoData(area, 'Shield', 'No telemetry from remote agents yet. Deploy staragent on endpoints.');
+  const [stats, installerInfo] = await Promise.all([
+    api('/api/shield/stats'),
+    api('/api/agent/installer-info'),
+  ]);
+
+  if (!stats || stats.status === 'no_data') {
+    area.innerHTML = `
+      <div class="view-header">
+        <h2><span>Shield</span> · Fleet Security Telemetry</h2>
+      </div>
+      <div class="empty-state glass" style="margin-bottom:16px">
+        <div class="icon" style="font-size:32px">⛨</div>
+        <h3>No endpoints yet</h3>
+        <p>Deploy StarAgent on remote machines to collect telemetry.</p>
+      </div>
+      ${renderDownloadSection(installerInfo)}
+    `;
     return;
   }
 
-  const agg = data.aggregate || {};
-  const nodes = data.nodes || [];
+  const agg = stats.aggregate || {};
+  const nodes = stats.nodes || [];
   const online = nodes.filter(n => n.tables && n.tables.status);
 
   area.innerHTML = `
     <div class="view-header">
       <h2><span>Shield</span> · Fleet Security Telemetry</h2>
-      <span class="muted mono" style="font-size:11px">${escapeHtml(data.timestamp || '')}</span>
+      <span class="muted mono" style="font-size:11px">${escapeHtml(stats.timestamp || '')}</span>
     </div>
 
     <div class="health-grid">
@@ -33,7 +47,7 @@ async function renderShieldView(area) {
       </div>
       <div class="health-card glass ${online.length > 0 ? 'good' : 'warn'}">
         <div class="label">Nodes Online</div>
-        <div class="value">${online.length}/${data.total_nodes}</div>
+        <div class="value">${online.length}/${stats.total_nodes}</div>
       </div>
       <div class="health-card glass good">
         <div class="label">Peak CPU</div>
@@ -95,5 +109,96 @@ async function renderShieldView(area) {
         }).join('') : '<div class="empty-state" style="padding:16px"><p>No nodes reporting</p></div>'}
       </div>
     </div>
+
+    ${renderDownloadSection(installerInfo)}
   `;
+}
+
+function renderDownloadSection(info) {
+  if (!info) return '';
+  const plat = info.platforms || {};
+  const natsUrl = info.nats_url || 'nats://hub:4222';
+  const token = info.token || '';
+
+  const platKeys = Object.keys(plat);
+  const platHtml = platKeys.map(key => {
+    const p = plat[key];
+    const icon = key === 'windows' ? '⊞' : key === 'darwin' ? '⌘' : '⌨';
+    return `<div class="plant-card glass" style="cursor:pointer;text-align:center" onclick="downloadAgent('${escapeHtml(key)}')">
+      <div style="font-size:28px;margin-bottom:6px">${icon}</div>
+      <div class="plant-name">${escapeHtml(p.name)}</div>
+      <div class="plant-meta" style="justify-content:center">
+        <span class="badge">Download</span>
+      </div>
+    </div>`;
+  }).join('') || '<div class="muted" style="padding:8px">No platforms available</div>';
+
+  return `
+    <div class="section glass" style="margin-top:16px">
+      <div class="panel-title">Deploy Agent</div>
+      <div style="padding:0 14px 14px">
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+          <div style="flex:1;min-width:200px">
+            <div style="font-size:11px;color:var(--color-text-muted);margin-bottom:4px">NATS Hub URL</div>
+            <code class="mono" style="font-size:13px;background:var(--color-glass);padding:6px 10px;border-radius:6px;border:1px solid var(--color-glass-edge);display:inline-block">${escapeHtml(natsUrl)}</code>
+          </div>
+          <div style="flex:1;min-width:200px">
+            <div style="font-size:11px;color:var(--color-text-muted);margin-bottom:4px">Agent Token</div>
+            <code class="mono" style="font-size:13px;background:var(--color-glass);padding:6px 10px;border-radius:6px;border:1px solid var(--color-glass-edge);display:inline-block">${escapeHtml(token.substring(0, 16))}…</code>
+          </div>
+          <button class="btn btn-secondary" style="padding:6px 14px;font-size:12px" onclick="regenerateToken()">Regenerate Token</button>
+        </div>
+
+        <div style="font-size:11px;color:var(--color-text-muted);margin-bottom:8px">Download installer for your platform:</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px">
+          ${platHtml}
+        </div>
+
+        <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--color-glass-edge)">
+          <div style="font-size:11px;color:var(--color-text-muted);margin-bottom:6px">Or install with a single command:</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <code id="install-cmd" class="mono" style="flex:1;font-size:12px;background:var(--color-glass);padding:8px 12px;border-radius:6px;border:1px solid var(--color-glass-edge);word-break:break-all">curl -fsSL https://raw.githubusercontent.com/andromi-hash/starship-os/master/scripts/install-agent-linux.sh | bash -s -- --nats-url ${escapeHtml(natsUrl)} --nats-token ${escapeHtml(token)}</code>
+            <button class="btn btn-secondary" style="padding:6px 14px;font-size:12px;flex-shrink:0" onclick="copyInstallCmd()">Copy</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function downloadAgent(platform) {
+  const info = await api('/api/agent/installer-info');
+  if (!info) { showToast('Failed to get installer info', 3000, 'error'); return; }
+  const url = `/api/agent/download/${encodeURIComponent(platform)}?token=${encodeURIComponent(info.token)}`;
+  window.location.href = url;
+}
+
+async function regenerateToken() {
+  if (!confirm('Regenerate the shared agent token? Existing agents using the old token will lose connection until updated with the new one.')) return;
+  const res = await api('/api/agent/regenerate-token', { method: 'POST' });
+  if (res && res.status === 'ok') {
+    showToast('New token generated. Update your agents with the new token.', 4000, 'info');
+    const area = document.getElementById('shield-content');
+    if (area && S.currentView === 'shield') renderShieldView(area);
+  } else {
+    showToast('Failed to regenerate token', 3000, 'error');
+  }
+}
+
+function copyInstallCmd() {
+  const el = document.getElementById('install-cmd');
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent).then(() => {
+    showToast('Install command copied to clipboard', 2000, 'success');
+  }).catch(() => {
+    // Fallback for older browsers
+    const sel = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    sel.removeAllRanges();
+    sel.addRange(range);
+    document.execCommand('copy');
+    sel.removeAllRanges();
+    showToast('Install command copied', 2000, 'success');
+  });
 }

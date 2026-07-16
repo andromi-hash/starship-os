@@ -3,9 +3,11 @@
 
 import sys
 import os
+import io
 import json
 import asyncio
 import logging
+import secrets
 import subprocess
 import uuid
 from pathlib import Path
@@ -982,6 +984,333 @@ async def handle_marketplace_page(request):
     return web.Response(text="<h1>Marketplace not found</h1>", content_type="text/html")
 
 
+# ── Agent Installer Generator ──────────────────────────────────────────────
+
+AGENT_TOKEN_DIR = Path("/etc/starship/nats/agent-tokens")
+AGENT_ARCHIVE_DIR = PROJECT_DIR / "dist"
+GITHUB_RELEASES = "https://github.com/andromi-hash/starship-os/releases/latest/download"
+
+PLATFORM_CONFIG = {
+    "linux": {
+        "archive": "staragent-linux-x86_64.tar.gz",
+        "binary": "staragent",
+        "install_script": "install-agent-linux.sh",
+        "human": "Linux (x86_64)",
+    },
+    "windows": {
+        "archive": "staragent-windows-x86_64.zip",
+        "binary": "staragent.exe",
+        "install_script": "install.bat",
+        "human": "Windows (x86_64)",
+    },
+    "darwin": {
+        "archive": "staragent-darwin-x86_64.tar.gz",
+        "binary": "staragent",
+        "install_script": "install-agent-linux.sh",
+        "human": "macOS (x86_64)",
+    },
+}
+
+
+def _get_hub_ip() -> str:
+    """Best-effort detection of the hub's reachable IP/hostname."""
+    import socket
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        pass
+    host = os.getenv("STARSHIP_HOSTNAME") or os.getenv("HOSTNAME") or "localhost"
+    return host
+
+
+def _get_or_create_agent_token(agent_id: str = None) -> str:
+    """Generate and persist a token, or return existing one."""
+    if agent_id is None:
+        agent_id = f"drone-{uuid.uuid4().hex[:8]}"
+    AGENT_TOKEN_DIR.mkdir(parents=True, exist_ok=True)
+    token_file = AGENT_TOKEN_DIR / f"{agent_id}.token"
+    if token_file.exists():
+        return token_file.read_text().strip()
+    token = secrets.token_hex(32)
+    token_file.write_text(token)
+    token_file.chmod(0o600)
+    log.info("Generated agent token for %s", agent_id)
+    return token
+
+
+def _regenerate_shared_token() -> str:
+    """Force-regenerate the shared agent token."""
+    AGENT_TOKEN_DIR.mkdir(parents=True, exist_ok=True)
+    token_file = AGENT_TOKEN_DIR / "_shared.token"
+    token = secrets.token_hex(32)
+    token_file.write_text(token)
+    token_file.chmod(0o600)
+    log.info("Regenerated shared agent token")
+    return token
+
+
+def _find_archive(platform: str) -> Path | None:
+    """Look for a pre-built archive in dist/, repo root, or packaging dirs."""
+    candidates = [
+        AGENT_ARCHIVE_DIR / PLATFORM_CONFIG[platform]["archive"],
+        PROJECT_DIR / "dist" / PLATFORM_CONFIG[platform]["archive"],
+        PROJECT_DIR / "packaging" / platform / PLATFORM_CONFIG[platform]["archive"],
+    ]
+    for p in candidates:
+        if p.exists():
+            return p
+    return None
+
+
+def _build_install_script(platform: str, nats_url: str, token: str, hostname: str = "") -> str:
+    """Generate an inline install script with pre-injected NATS config."""
+    escaped_token = token.replace('"', '\\"')
+    escaped_url = nats_url.replace('"', '\\"')
+
+    if platform == "linux" or platform == "darwin":
+        return f"""#!/usr/bin/env bash
+# Starship OS Drone Agent — auto-generated installer
+set -euo pipefail
+NATS_URL="{escaped_url}"
+NATS_TOKEN="{escaped_token}"
+HOSTNAME="{hostname or "$(hostname)"}"
+ARCHIVE_URL="{GITHUB_RELEASES}/{PLATFORM_CONFIG[platform]['archive']}"
+INSTALL_DIR="/opt/starship"
+CONFIG_DIR="/etc/starship/agents"
+LOG_DIR="/var/log/starship"
+
+if [[ "$(id -u)" != "0" ]]; then
+    echo "Must run as root (use sudo)" >&2
+    exit 1
+fi
+
+echo "==> Downloading staragent..."
+mkdir -p "$INSTALL_DIR/bin" "$CONFIG_DIR" "$LOG_DIR"
+curl -fsSL "$ARCHIVE_URL" -o /tmp/staragent.tar.gz
+tar xzf /tmp/staragent.tar.gz -C /tmp/
+if [[ -f /tmp/staragent ]]; then
+    cp /tmp/staragent "$INSTALL_DIR/bin/staragent"
+    chmod 755 "$INSTALL_DIR/bin/staragent"
+else
+    echo "ERROR: Binary not found in archive" >&2
+    exit 1
+fi
+
+echo "==> Writing config..."
+cat > "$CONFIG_DIR/staragent.yaml" <<YAMLEOF
+nats:
+  url: "$NATS_URL"
+  token: "$NATS_TOKEN"
+telemetry:
+  interval_secs: 10
+commands:
+  subscribe:
+    - "starship.agent.staragent.command.>"
+    - "agnetic.agent.staragent.command.>"
+hostname: "$HOSTNAME"
+YAMLEOF
+
+echo "==> Installing systemd service..."
+cat > /etc/systemd/system/agnetic-staragent.service <<UNIT
+[Unit]
+Description=Starship OS - StarAgent Telemetry Collector
+After=network.target
+[Service]
+Type=simple
+ExecStart=$INSTALL_DIR/bin/staragent
+Restart=always
+RestartSec=5
+Environment=RUST_LOG=info
+Environment=STARSHIP_ROOT=$INSTALL_DIR
+Environment=STARAGENT_CONFIG=$CONFIG_DIR/staragent.yaml
+NoNewPrivileges=true
+ProtectSystem=full
+ReadWritePaths=$LOG_DIR /tmp
+ProtectHome=true
+[Install]
+WantedBy=multi-user.target
+UNIT
+
+systemctl daemon-reload
+systemctl enable agnetic-staragent.service
+systemctl start agnetic-staragent.service
+echo "==> Done! StarAgent is running."
+"""
+
+    elif platform == "windows":
+        return f"""@echo off
+setlocal enabledelayedexpansion
+title Starship OS Drone Agent Installer
+set "AGENT_DIR=C:\\Program Files\\Starship\\Agent"
+set "DATA_DIR=C:\\ProgramData\\Starship"
+set "LOGS_DIR=%DATA_DIR%\\logs"
+set "SERVICE_NAME=StarshipStarAgent"
+set "NATS_URL={escaped_url}"
+set "NATS_TOKEN={escaped_token}"
+set "HOSTNAME={hostname or "%COMPUTERNAME%"}"
+
+net session >nul 2>&1
+if %ERRORLEVEL% neq 0 (
+    echo ERROR: Must run as Administrator
+    pause
+    exit /b 1
+)
+
+echo ==^> Downloading staragent...
+powershell -Command "& {{
+    $url = '{GITHUB_RELEASES}/{PLATFORM_CONFIG[platform]['archive']}'
+    $zip = \"$env:TEMP\\staragent.zip\"
+    Invoke-WebRequest -Uri $url -OutFile $zip
+    Expand-Archive -Path $zip -DestinationPath \"$env:TEMP\\staragent\" -Force
+}}"
+
+if not exist "%TEMP%\\staragent\\staragent.exe" (
+    echo ERROR: Download failed
+    pause
+    exit /b 1
+)
+
+echo ==^> Installing files...
+if not exist "%AGENT_DIR%" mkdir "%AGENT_DIR%"
+if not exist "%DATA_DIR%" mkdir "%DATA_DIR%"
+if not exist "%LOGS_DIR%" mkdir "%LOGS_DIR%"
+copy /Y "%TEMP%\\staragent\\staragent.exe" "%AGENT_DIR%\\staragent.exe" >nul
+
+echo ==^> Writing config...
+(
+    echo nats:
+    echo   url: "!NATS_URL!"
+    echo   token: "!NATS_TOKEN!"
+    echo telemetry:
+    echo   interval_secs: 10
+    echo commands:
+    echo   subscribe:
+    echo     - "starship.agent.staragent.command.^>"
+    echo     - "agnetic.agent.staragent.command.^>"
+    echo hostname: "!HOSTNAME!"
+) > "%AGENT_DIR%\\staragent.yaml"
+
+echo ==^> Installing service...
+sc stop %SERVICE_NAME% >nul 2>&1
+sc delete %SERVICE_NAME% >nul 2>&1
+sc create %SERVICE_NAME% binPath="%AGENT_DIR%\\staragent.exe" DisplayName="Starship OS StarAgent Telemetry Collector" start=auto obj=LocalSystem
+sc start %SERVICE_NAME% >nul 2>&1
+
+echo ==^> Done! StarAgent is running.
+pause
+"""
+    return ""
+
+
+async def handle_agent_download(request):
+    """Download a pre-configured agent installer for the given platform."""
+    platform = request.match_info.get("platform", "").lower()
+    if platform not in PLATFORM_CONFIG:
+        return web.json_response({"error": f"Unsupported platform: {platform}. Choose: {', '.join(PLATFORM_CONFIG.keys())}"}, status=400)
+
+    token = request.query.get("token", "") or _get_or_create_agent_token()
+    hostname = request.query.get("hostname", "")
+
+    hub_ip = _get_hub_ip()
+    nats_port = NATS_URL.split(":")[-1] if ":" in NATS_URL else "4222"
+    nats_url = f"nats://{hub_ip}:{nats_port}"
+
+    # Try to serve a pre-built archive with injected config
+    archive_path = _find_archive(platform)
+    if archive_path:
+        import zipfile, tarfile
+        raw = archive_path.read_bytes()
+        if platform == "windows":
+            buf = io.BytesIO()
+            with zipfile.ZipFile(io.BytesIO(raw), "r") as zin:
+                with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zout:
+                    for item in zin.infolist():
+                        data = zin.read(item.filename)
+                        name_lower = item.filename.lower()
+                        if "staragent.yaml" in name_lower or "install" in name_lower or "configure" in name_lower:
+                            text = data.decode("utf-8", errors="replace")
+                            text = text.replace("__STARSHIP_NATS_URL__", nats_url)
+                            text = text.replace("__STARSHIP_NATS_TOKEN__", token)
+                            data = text.encode("utf-8")
+                        zout.writestr(item, data)
+            body = buf.getvalue()
+            ctype = "application/zip"
+            fname = f"staragent-{platform}-x86_64.zip"
+        else:
+            buf = io.BytesIO()
+            with tarfile.open(fileobj=io.BytesIO(raw), mode="r:gz") as tar:
+                with tarfile.open(fileobj=buf, mode="w:gz") as tar_out:
+                    for member in tar.getmembers():
+                        f = tar.extractfile(member)
+                        if f is None:
+                            continue
+                        data = f.read()
+                        name_lower = member.name.lower()
+                        if name_lower.endswith(".yaml") or "install" in name_lower:
+                            text = data.decode("utf-8", errors="replace")
+                            text = text.replace("__STARSHIP_NATS_URL__", nats_url)
+                            text = text.replace("__STARSHIP_NATS_TOKEN__", token)
+                            data = text.encode("utf-8")
+                        tar_out.addfile(member, io.BytesIO(data))
+            body = buf.getvalue()
+            ctype = "application/gzip"
+            fname = f"staragent-{platform}-x86_64.tar.gz"
+
+        return web.Response(
+            body=body,
+            content_type=ctype,
+            headers={
+                "Content-Disposition": f'attachment; filename="{fname}"',
+                "Cache-Control": "no-cache",
+            },
+        )
+
+    # Fallback: generate an inline install script
+    script = _build_install_script(platform, nats_url, token, hostname)
+    ext = ".bat" if platform == "windows" else ".sh"
+    return web.Response(
+        body=script.encode("utf-8"),
+        content_type="text/plain",
+        headers={
+            "Content-Disposition": f'attachment; filename="install-staragent{ext}"',
+            "Cache-Control": "no-cache",
+        },
+    )
+
+
+async def handle_agent_installer_info(request):
+    """Return available platforms and hub connection info for the installer UI."""
+    hub_ip = _get_hub_ip()
+    nats_port = NATS_URL.split(":")[-1] if ":" in NATS_URL else "4222"
+    nats_url = f"nats://{hub_ip}:{nats_port}"
+    platforms = {}
+    for key, cfg in PLATFORM_CONFIG.items():
+        has_archive = _find_archive(key) is not None
+        platforms[key] = {
+            "name": cfg["human"],
+            "has_archive": has_archive,
+            "download_url": f"/api/agent/download/{key}",
+        }
+    return web.json_response({
+        "nats_url": nats_url,
+        "nats_port": nats_port,
+        "hub_ip": hub_ip,
+        "platforms": platforms,
+        "token": _get_or_create_agent_token("_shared"),
+        "timestamp": datetime.utcnow().isoformat(),
+    })
+
+
+async def handle_agent_regenerate_token(request):
+    """Force-regenerate the shared agent token."""
+    token = _regenerate_shared_token()
+    return web.json_response({"status": "ok", "token": token, "message": "Shared agent token regenerated"})
+
+
 # ── App ─────────────────────────────────────────────────────────────────────
 
 app = web.Application()
@@ -1012,6 +1341,9 @@ app.router.add_get("/api/policy", handle_no_data)
 app.router.add_get("/api/memory", handle_no_data)
 app.router.add_get("/api/skills", handle_no_data)
 app.router.add_get("/api/shield/stats", handle_shield_stats)
+app.router.add_get("/api/agent/installer-info", handle_agent_installer_info)
+app.router.add_get("/api/agent/download/{platform}", handle_agent_download)
+app.router.add_post("/api/agent/regenerate-token", handle_agent_regenerate_token)
 app.router.add_get("/api/telemetry/stats", handle_no_data)
 app.router.add_get("/api/telemetry/recent", handle_no_data)
 app.router.add_get("/api/accounts", handle_no_data)
