@@ -92,7 +92,8 @@ else
 
     mkdir -p "$INSTALL_DIR/bin"
     TMP_DIR=$(mktemp -d)
-    if curl -fsSL "$DOWNLOAD_URL" -o "$TMP_DIR/staragent.tar.gz" 2>/dev/null; then
+    log "Downloading..."
+    if curl -fsSL "$DOWNLOAD_URL" -o "$TMP_DIR/staragent.tar.gz"; then
         tar xzf "$TMP_DIR/staragent.tar.gz" -C "$TMP_DIR"
         if [[ -f "$TMP_DIR/staragent" ]]; then
             cp "$TMP_DIR/staragent" "$INSTALL_DIR/bin/staragent"
