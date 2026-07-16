@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Starship OS — Linux Drone Agent Installer
-# Installs staragent on a Linux endpoint as a systemd service.
+# Starship OS — Linux Drone Agent Installer (v2.2.1)
+# Installs staragent on a Linux endpoint as a systemd/nohup service.
 # Designed for headless remote "drone" nodes connecting to a hub.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/andromi-hash/starship-os/master/scripts/install-agent-linux.sh | bash -s -- --nats-url nats://hub:4222 --nats-token YOUR_TOKEN
+#   curl -fsSL https://github.com/andromi-hash/starship-os/raw/master/scripts/install-agent-linux.sh | sudo bash -s -- --nats-url nats://hub:4222 --nats-token YOUR_TOKEN
 #
 # Or download and run locally:
-#   ./install-agent-linux.sh --nats-url nats://10.0.0.1:4222 --nats-token abc123
+#   sudo ./install-agent-linux.sh --nats-url nats://10.0.0.1:4222 --nats-token abc123
 
 set -euo pipefail
 
