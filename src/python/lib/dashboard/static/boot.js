@@ -21,17 +21,34 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   S.agents = agentsResult?.agents || [];
   S.incidents = incidentsResult?.incidents || [];
-  renderSidebar();
-  renderView('dashboard');
 
-  // ── Navigation ─────────────────────────────────────────────────────────
+  // ── Navigation first so a render error never leaves tabs dead ──────────
   document.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('click', (e) => {
       e.preventDefault();
       const view = item.dataset.view;
-      renderView(view);
+      if (!view) return;
+      try {
+        renderView(view);
+      } catch (err) {
+        console.error('renderView failed', view, err);
+        showToast(`View error: ${err.message || err}`, 4000, 'error');
+      }
     });
   });
+
+  try {
+    renderSidebar();
+  } catch (err) {
+    console.error('renderSidebar failed', err);
+  }
+  try {
+    renderView('dashboard');
+  } catch (err) {
+    console.error('initial dashboard render failed', err);
+    const area = document.getElementById('dashboard-content');
+    if (area) showError(area, err.message || String(err));
+  }
 
   // ── Right panel close ──────────────────────────────────────────────────
   document.getElementById('right-panel-close')?.addEventListener('click', clearRightPanel);

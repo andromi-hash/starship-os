@@ -58,11 +58,30 @@ async function api(path, opts = {}) {
 
 function showToast(msg, ms = 3000, type = 'info') {
   const c = document.getElementById('toast-container');
+  if (!c) return;
   const t = document.createElement('div');
   t.className = `toast ${type}`;
   t.textContent = msg;
   c.appendChild(t);
   setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 200); }, ms);
+}
+
+function showLoading(area) {
+  if (!area) return;
+  area.innerHTML = `<div class="empty-state" style="padding:40px;text-align:center;color:rgba(255,255,255,0.5)">
+    <div style="font-size:24px;margin-bottom:8px">&#9696;</div>
+    <p>Loading…</p>
+  </div>`;
+}
+
+function showError(area, msg) {
+  if (!area) return;
+  area.innerHTML = `<div class="empty-state" style="padding:40px;text-align:center">
+    <div style="font-size:24px;margin-bottom:8px;color:#ff5252">&#9888;</div>
+    <h3 style="color:#fff;margin-bottom:6px">Error</h3>
+    <p style="color:rgba(255,255,255,0.5)">${escapeHtml(msg || 'Something went wrong')}</p>
+    <button class="btn btn-secondary" style="margin-top:12px" onclick="renderView(S.currentView || 'dashboard')">Retry</button>
+  </div>`;
 }
 
 function showConfirmDialog(msg) {
