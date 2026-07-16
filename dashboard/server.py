@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Starship OS Web Dashboard — dynamic config, real-time status, Ollama management."""
+"""Starship OS Command Dashboard — live fleet, crew, chat, telemetry on :8788."""
 
 import sys
 import os
@@ -13,7 +13,7 @@ from datetime import datetime
 from aiohttp import web
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-log = logging.getLogger("agnetic-dash")
+log = logging.getLogger("starship-dash")
 
 NATS_URL = os.getenv("NATS_URL", "nats://127.0.0.1:4222")
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434")
@@ -25,44 +25,68 @@ if not GPU_STATE.exists():
     if _legacy_gpu.exists():
         GPU_STATE = _legacy_gpu
 HISTORY_DIR = Path("/tmp/agnetic-history")
-PROJECT_DIR = Path(os.getenv("AGNETIC_ROOT", os.path.dirname(os.path.abspath(__file__)).replace("/dashboard", "")))
+
+_HERE = Path(os.path.abspath(__file__)).resolve().parent
+# Resolve project root for agents/, services/, skills/
+_CANDIDATES = [
+    Path(os.getenv("AGNETIC_ROOT", "")),
+    Path(os.getenv("STARSHIP_ROOT", "")),
+    _HERE.parent if (_HERE.parent / "agents").is_dir() else None,
+    Path("/opt/starship-os-build/starship-os"),
+    Path("/opt/starship/lib/starship"),
+    Path("/opt/agnetic"),
+]
+PROJECT_DIR = next((p for p in _CANDIDATES if p and (p / "agents").is_dir()), _HERE.parent)
+STATIC_DIR = _HERE / "static"
+if not STATIC_DIR.is_dir():
+    STATIC_DIR = Path("/opt/agnetic/lib/dashboard/static")
 
 nc = None
 
 
 def load_agent_configs():
-    """Load agent configs from YAML files."""
+    """Load agent configs from YAML (top-level name or nested agent.name)."""
     configs = {}
     agents_dir = PROJECT_DIR / "agents"
-    for yaml_file in agents_dir.glob("*.yaml"):
-        if yaml_file.name == "config.yaml":
+    if not agents_dir.is_dir():
+        agents_dir = Path("/etc/starship")
+    try:
+        import yaml
+    except ImportError:
+        return configs
+
+    for yaml_file in sorted(agents_dir.glob("*.yaml")):
+        if yaml_file.name in ("config.yaml", "fleet.yaml", "profile.yaml", "profiles.yaml"):
             continue
         try:
-            import yaml
-            with open(yaml_file) as f:
-                data = yaml.safe_load(f)
-            if data and "agent" in data:
-                name = data["agent"].get("name", yaml_file.stem)
-                configs[name] = {
-                    "name": name,
-                    "model": data["agent"].get("model", "unknown"),
-                    "description": data["agent"].get("description", ""),
-                    "skills": data["agent"].get("skills", []),
-                    "nats_subjects": data["agent"].get("nats", {}).get("subjects", {}),
-                    "file": yaml_file.name,
-                }
+            data = yaml.safe_load(yaml_file.read_text()) or {}
+            if "agent" in data and isinstance(data["agent"], dict):
+                meta = data["agent"]
+                name = meta.get("name", yaml_file.stem)
+            else:
+                meta = data
+                name = data.get("name", yaml_file.stem)
+            if not name or name in configs:
+                continue
+            configs[name] = {
+                "name": name,
+                "model": meta.get("model", "unknown"),
+                "role": meta.get("role", ""),
+                "description": meta.get("description", meta.get("role", "")),
+                "skills": meta.get("skills", []),
+                "capabilities": meta.get("capabilities", []),
+                "file": yaml_file.name,
+            }
         except Exception as e:
-            log.warning(f"Failed to load {yaml_file}: {e}")
+            log.warning("Failed to load %s: %s", yaml_file, e)
 
-    # Fallback: read main config.yaml
+    # Fallback main config.yaml agents map
     if not configs:
         config_file = agents_dir / "config.yaml"
         if config_file.exists():
             try:
-                import yaml
-                with open(config_file) as f:
-                    data = yaml.safe_load(f)
-                for name, agent_data in data.get("agents", {}).items():
+                data = yaml.safe_load(config_file.read_text()) or {}
+                for name, agent_data in (data.get("agents") or {}).items():
                     configs[name] = {
                         "name": name,
                         "model": agent_data.get("model", "unknown"),
@@ -71,29 +95,87 @@ def load_agent_configs():
                         "file": "config.yaml",
                     }
             except Exception as e:
-                log.warning(f"Failed to load config.yaml: {e}")
-
+                log.warning("Failed to load config.yaml: %s", e)
     return configs
 
 
 def get_gpu_info():
-    """Read GPU state from detect-gpu output."""
     try:
         if GPU_STATE.exists():
             return json.loads(GPU_STATE.read_text())
-    except (json.JSONDecodeError, IOError):
+    except (json.JSONDecodeError, OSError):
         pass
     return {"vendor": "none"}
 
 
 def get_system_telemetry():
-    """Read system telemetry from status file."""
     try:
         if STATUS_FILE.exists():
             return json.loads(STATUS_FILE.read_text())
-    except (json.JSONDecodeError, IOError):
+    except (json.JSONDecodeError, OSError):
         pass
-    return {"agents": {}, "telemetry": {}, "messages": []}
+    # Fallback /proc
+    tel = {"cpu_percent": 0, "memory_percent": 0, "disk_percent": 0, "load": {}}
+    try:
+        load = Path("/proc/loadavg").read_text().split()
+        tel["load"] = {"1min": float(load[0]), "5min": float(load[1]), "15min": float(load[2])}
+        # rough cpu from load
+        tel["cpu_percent"] = min(100.0, float(load[0]) * 25)
+    except Exception:
+        pass
+    try:
+        mem = {}
+        for line in Path("/proc/meminfo").read_text().splitlines():
+            parts = line.split()
+            if len(parts) >= 2:
+                mem[parts[0].rstrip(":")] = int(parts[1])
+        total = mem.get("MemTotal", 1)
+        avail = mem.get("MemAvailable", mem.get("MemFree", 0))
+        used = total - avail
+        tel["memory_percent"] = round(used / total * 100, 1)
+        tel["memory_used"] = used * 1024
+        tel["memory_total"] = total * 1024
+    except Exception:
+        pass
+    try:
+        st = os.statvfs("/")
+        total = st.f_blocks * st.f_frsize
+        free = st.f_bavail * st.f_frsize
+        used = total - free
+        tel["disk_percent"] = round(used / total * 100, 1) if total else 0
+        tel["disk_used"] = used
+        tel["disk_total"] = total
+    except Exception:
+        pass
+    return {"agents": {}, "telemetry": tel, "messages": []}
+
+
+def _normalize_telemetry(raw):
+    """Flatten nested telemetry shapes into UI-friendly percents."""
+    t = raw.get("telemetry") if isinstance(raw, dict) else {}
+    if not isinstance(t, dict):
+        t = {}
+    full = t.get("full") if isinstance(t.get("full"), dict) else t
+    out = {
+        "cpu_percent": full.get("cpu_percent") or t.get("cpu_percent") or 0,
+        "memory_percent": full.get("memory_percent") or t.get("memory_percent")
+            or (full.get("mem") or {}).get("percent") or 0,
+        "disk_percent": full.get("disk_percent") or t.get("disk_percent") or 0,
+        "load": full.get("load") or t.get("load") or {},
+        "memory_used": full.get("memory_used") or (full.get("mem") or {}).get("used"),
+        "memory_total": full.get("memory_total") or (full.get("mem") or {}).get("total"),
+        "disk_used": full.get("disk_used"),
+        "disk_total": full.get("disk_total"),
+        "rx_bytes": full.get("rx_bytes"),
+        "tx_bytes": full.get("tx_bytes"),
+    }
+    # derive cpu_percent from load if missing
+    if not out["cpu_percent"] and out["load"]:
+        try:
+            out["cpu_percent"] = min(100.0, float(out["load"].get("1min", 0)) * 25)
+        except Exception:
+            pass
+    return out
 
 
 async def get_nats():
@@ -105,11 +187,10 @@ async def get_nats():
 
 
 async def get_ollama_models():
-    """Fetch Ollama model list."""
     try:
         import aiohttp
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"{OLLAMA_URL}/api/tags") as resp:
+            async with session.get(f"{OLLAMA_URL}/api/tags", timeout=aiohttp.ClientTimeout(total=5)) as resp:
                 if resp.status == 200:
                     data = await resp.json()
                     return data.get("models", [])
@@ -119,13 +200,13 @@ async def get_ollama_models():
 
 
 async def get_agent_process_status():
-    """Check which agent daemons are running."""
     agents = {}
-    for name in ["proxy", "romi", "ergo"]:
+    names = set(load_agent_configs().keys()) | {"proxy", "romi", "ergo"}
+    for name in names:
         try:
             result = subprocess.run(
                 ["pgrep", "-f", f"agent_daemon.py {name}"],
-                capture_output=True, timeout=2
+                capture_output=True, timeout=2,
             )
             agents[name] = result.returncode == 0
         except Exception:
@@ -133,67 +214,126 @@ async def get_agent_process_status():
     return agents
 
 
-async def handle_index(request):
-    index_html = PROJECT_DIR / "dashboard" / "index.html"
-    if index_html.exists():
-        return web.Response(text=index_html.read_text(), content_type="text/html")
-    return web.Response(text="<h1>Dashboard loading...</h1>", content_type="text/html")
+# ── Static SPA ──────────────────────────────────────────────────────────────
 
+async def handle_index(request):
+    index = STATIC_DIR / "index.html"
+    if index.exists():
+        return web.Response(text=index.read_text(), content_type="text/html",
+                            headers={"Cache-Control": "no-cache"})
+    # fallback monorepo single-file
+    legacy = PROJECT_DIR / "dashboard" / "index.html"
+    if legacy.exists():
+        return web.Response(text=legacy.read_text(), content_type="text/html")
+    return web.Response(text="<h1>Starship Dashboard — static/index.html missing</h1>", content_type="text/html")
+
+
+def _serve_static_file(rel: str):
+    target = (STATIC_DIR / rel).resolve()
+    if not str(target).startswith(str(STATIC_DIR.resolve())) or not target.is_file():
+        return web.Response(status=404, text="Not found")
+    ctype = "application/octet-stream"
+    if target.suffix == ".js":
+        ctype = "application/javascript"
+    elif target.suffix == ".css":
+        ctype = "text/css"
+    elif target.suffix == ".html":
+        ctype = "text/html"
+    elif target.suffix == ".json":
+        ctype = "application/json"
+    elif target.suffix == ".svg":
+        ctype = "image/svg+xml"
+    return web.Response(body=target.read_bytes(), content_type=ctype, charset="utf-8",
+                        headers={"Cache-Control": "no-cache"})
+
+
+async def handle_static(request):
+    return _serve_static_file(request.match_info.get("path", ""))
+
+
+async def handle_static_root(request):
+    name = request.match_info.get("name", "")
+    if name not in {
+        "style.css", "boot.js", "ui.js", "dashboard.js", "agents.js",
+        "chat.js", "fleet.js", "incidents.js", "panels.js",
+    }:
+        return web.Response(status=404, text="Not found")
+    return _serve_static_file(name)
+
+
+# ── Live APIs ───────────────────────────────────────────────────────────────
 
 async def handle_api_dashboard(request):
-    """Main dashboard API — returns all data needed by the UI."""
     agent_configs = load_agent_configs()
     agent_status = await get_agent_process_status()
     gpu_info = get_gpu_info()
-    telemetry = get_system_telemetry()
+    raw = get_system_telemetry()
+    telemetry = _normalize_telemetry(raw)
     ollama_models = await get_ollama_models()
 
-    # Merge agent configs with runtime status
     agents = {}
     for name, config in agent_configs.items():
+        running = agent_status.get(name, False)
         agents[name] = {
             **config,
-            "running": agent_status.get(name, False),
-            "status": "online" if agent_status.get(name, False) else "offline",
+            "running": running,
+            "status": "online" if running else "offline",
         }
-
-    # Add any agents from runtime status not in configs
     for name, running in agent_status.items():
         if name not in agents:
             agents[name] = {
-                "name": name,
-                "model": "unknown",
-                "description": "",
-                "skills": [],
-                "running": running,
+                "name": name, "model": "unknown", "description": "",
+                "skills": [], "running": running,
                 "status": "online" if running else "offline",
             }
 
+    nats_ok = bool(nc and nc.is_connected)
     return web.json_response({
         "agents": agents,
-        "telemetry": telemetry.get("telemetry", {}),
-        "messages": telemetry.get("messages", []),
+        "telemetry": telemetry,
+        "messages": raw.get("messages", []) if isinstance(raw, dict) else [],
         "gpu": gpu_info,
         "ollama": {
             "url": OLLAMA_URL,
             "models": [{"name": m.get("name", ""), "size": m.get("size", 0)} for m in ollama_models],
         },
-        "nats": {"url": NATS_URL, "connected": nc.is_connected if nc else False},
+        "nats": {"url": NATS_URL, "connected": nats_ok},
         "timestamp": datetime.now().isoformat(),
     })
 
 
 async def handle_api_agents(request):
-    """Return agent configs and status."""
     agent_configs = load_agent_configs()
     agent_status = await get_agent_process_status()
-    agents = {}
+    agents_list = []
+    agents_map = {}
     for name, config in agent_configs.items():
-        agents[name] = {
+        running = agent_status.get(name, False)
+        entry = {
             **config,
-            "running": agent_status.get(name, False),
+            "running": running,
+            "status": "online" if running else "offline",
+            "uptime": "—",
+            "version": "2.1",
         }
-    return web.json_response({"agents": agents})
+        agents_map[name] = entry
+        agents_list.append(entry)
+    return web.json_response({"agents": agents_list, "agents_map": agents_map})
+
+
+async def handle_api_agent_detail(request):
+    name = request.match_info.get("name", "")
+    configs = load_agent_configs()
+    status = await get_agent_process_status()
+    cfg = configs.get(name)
+    if not cfg:
+        return web.json_response({"error": "not found", "status": "no_data"}, status=404)
+    return web.json_response({
+        **cfg,
+        "running": status.get(name, False),
+        "status": "online" if status.get(name, False) else "offline",
+        "recent_activity": [],
+    })
 
 
 async def handle_api_gpu(request):
@@ -201,20 +341,17 @@ async def handle_api_gpu(request):
 
 
 async def handle_api_ollama_models(request):
-    """List Ollama models."""
     models = await get_ollama_models()
     return web.json_response({"models": models})
 
 
 async def handle_api_ollama_pull(request):
-    """Pull an Ollama model."""
     try:
         body = await request.json()
         model = body.get("model", "")
         if not model:
             return web.json_response({"error": "model name required"}, status=400)
 
-        # Pull in background
         async def pull_model():
             proc = await asyncio.create_subprocess_exec(
                 "ollama", "pull", model,
@@ -230,7 +367,6 @@ async def handle_api_ollama_pull(request):
 
 
 async def handle_api_ollama_delete(request):
-    """Delete an Ollama model."""
     try:
         body = await request.json()
         model = body.get("model", "")
@@ -255,9 +391,7 @@ async def handle_send(request):
         args = body.get("args", {})
 
         nats = await get_nats()
-        safe_command = command.replace(" ", ".")
-        if not safe_command:
-            safe_command = "ping"
+        safe_command = command.replace(" ", ".") or "ping"
         subject = f"agnetic.agent.{agent}.command.{safe_command}"
         reply = f"agnetic.reply.{datetime.now().timestamp()}"
         sub = await nats.subscribe(reply, max_msgs=1)
@@ -286,44 +420,42 @@ async def handle_logs(request):
     try:
         lines = log_file.read_text().splitlines()[-100:]
         return web.json_response({"agent": agent, "lines": lines})
-    except (FileNotFoundError, IOError):
-        return web.json_response({"agent": agent, "lines": ["No log file found"]})
+    except (FileNotFoundError, OSError):
+        return web.json_response({"agent": agent, "lines": [], "status": "no_data"})
 
 
 async def handle_history(request):
     agent = request.query.get("agent", "")
     limit = int(request.query.get("limit", "50"))
     results = []
+    if not HISTORY_DIR.exists():
+        return web.json_response({"messages": [], "total": 0, "status": "no_data"})
     for f in sorted(HISTORY_DIR.glob("*.jsonl"), reverse=True)[:3]:
-        if not f.exists():
-            continue
-        with open(f) as fh:
-            for line in fh:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    entry = json.loads(line)
-                    if agent and agent not in entry.get("subject", ""):
+        try:
+            with open(f) as fh:
+                for line in fh:
+                    line = line.strip()
+                    if not line:
                         continue
-                    results.append(entry)
-                    if len(results) >= limit:
-                        break
-                except json.JSONDecodeError:
-                    continue
+                    try:
+                        entry = json.loads(line)
+                        if agent and agent not in entry.get("subject", ""):
+                            continue
+                        results.append(entry)
+                        if len(results) >= limit:
+                            break
+                    except json.JSONDecodeError:
+                        continue
             if len(results) >= limit:
                 break
+        except OSError:
+            continue
     return web.json_response({"messages": results, "total": len(results)})
 
 
 async def stream_ollama(model, messages, on_token=None):
-    """Stream a response from Ollama, yielding tokens via callback."""
     import aiohttp as _aiohttp
-    payload = {
-        "model": model,
-        "messages": messages,
-        "stream": True,
-    }
+    payload = {"model": model, "messages": messages, "stream": True}
     full_response = ""
     async with _aiohttp.ClientSession() as session:
         async with session.post(f"{OLLAMA_URL}/api/chat", json=payload) as resp:
@@ -349,27 +481,14 @@ async def stream_ollama(model, messages, on_token=None):
 
 
 TOOL_DEFINITIONS = {
-    "shell": {
-        "description": "Execute a shell command and return output",
-        "params": ["command"],
-    },
-    "read_file": {
-        "description": "Read a file from disk",
-        "params": ["path"],
-    },
-    "write_file": {
-        "description": "Write content to a file",
-        "params": ["path", "content"],
-    },
-    "list_dir": {
-        "description": "List directory contents",
-        "params": ["path"],
-    },
+    "shell": {"description": "Execute a shell command and return output", "params": ["command"]},
+    "read_file": {"description": "Read a file from disk", "params": ["path"]},
+    "write_file": {"description": "Write content to a file", "params": ["path", "content"]},
+    "list_dir": {"description": "List directory contents", "params": ["path"]},
 }
 
 
 def build_system_prompt(agent_name):
-    """Build a system prompt for the given agent."""
     tool_desc = "\n".join(
         f"- {name}: {info['description']} (params: {', '.join(info['params'])})"
         for name, info in TOOL_DEFINITIONS.items()
@@ -385,7 +504,6 @@ def build_system_prompt(agent_name):
 
 
 def extract_tool_calls(text):
-    """Extract JSON tool calls from agent text output."""
     calls = []
     for line in text.splitlines():
         line = line.strip()
@@ -400,14 +518,11 @@ def extract_tool_calls(text):
 
 
 async def execute_tool(tool_name, tool_args):
-    """Execute a tool locally and return the result."""
     if tool_name == "shell":
         cmd = tool_args.get("command", "echo 'no command'")
         try:
             proc = await asyncio.create_subprocess_shell(
-                cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.STDOUT,
+                cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT,
             )
             stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=30)
             return stdout.decode(errors="replace")[:4000]
@@ -434,22 +549,13 @@ async def execute_tool(tool_name, tool_args):
         path = tool_args.get("path", ".")
         try:
             entries = sorted(Path(path).iterdir())
-            return "\n".join(
-                f"{'d' if e.is_dir() else 'f'} {e.name}" for e in entries[:200]
-            )
+            return "\n".join(f"{'d' if e.is_dir() else 'f'} {e.name}" for e in entries[:200])
         except Exception as e:
             return f"Error listing {path}: {e}"
-    else:
-        return f"Unknown tool: {tool_name}"
+    return f"Unknown tool: {tool_name}"
 
 
 async def process_command(agent, command, args, callbacks):
-    """
-    Run the agent loop: send prompt to Ollama, parse tool calls, execute them,
-    feed results back, repeat until the agent produces a final text response.
-
-    callbacks dict keys: on_tool_start, on_tool_complete, on_step, on_token, on_response, on_error
-    """
     on_tool_start = callbacks.get("on_tool_start", lambda **kw: asyncio.sleep(0))
     on_tool_complete = callbacks.get("on_tool_complete", lambda **kw: asyncio.sleep(0))
     on_step = callbacks.get("on_step", lambda **kw: asyncio.sleep(0))
@@ -462,7 +568,8 @@ async def process_command(agent, command, args, callbacks):
         "romi": "qwen2.5:7b",
         "ergo": "jeffgreen311/eve-v2-unleashed-qwen3.5-8b-liberated-4b-4b-merged",
     }
-    model = model_map.get(agent, "qwen2.5:7b")
+    configs = load_agent_configs()
+    model = (configs.get(agent) or {}).get("model") or model_map.get(agent, "qwen2.5:7b")
 
     user_content = command
     if args:
@@ -473,14 +580,10 @@ async def process_command(agent, command, args, callbacks):
         {"role": "user", "content": user_content},
     ]
 
-    max_iterations = 5
-    for step_num in range(1, max_iterations + 1):
-        await on_step(step=step_num, max_steps=max_iterations)
-
+    for step_num in range(1, 6):
+        await on_step(step=step_num, max_steps=5)
         try:
-            full_text = await stream_ollama(
-                model, messages, on_token=on_token
-            )
+            full_text = await stream_ollama(model, messages, on_token=on_token)
         except Exception as e:
             await on_error(error=str(e))
             return
@@ -491,26 +594,20 @@ async def process_command(agent, command, args, callbacks):
             return
 
         messages.append({"role": "assistant", "content": full_text})
-
         for call in tool_calls:
             tool_name = call["tool"]
             tool_args = call.get("args", {})
             await on_tool_start(tool=tool_name, args=tool_args)
-
             result = await execute_tool(tool_name, tool_args)
             summary = result[:200] + ("..." if len(result) > 200 else "")
             await on_tool_complete(tool=tool_name, summary=f"Output: {summary}")
-
-            messages.append({
-                "role": "user",
-                "content": f"Tool result ({tool_name}):\n{result}",
-            })
+            messages.append({"role": "user", "content": f"Tool result ({tool_name}):\n{result}"})
 
     await on_response(text="[max iterations reached]")
 
 
-async def handle_chat_stream(request):
-    """SSE endpoint: POST /api/chat/stream with {agent, command, args}."""
+async def handle_chat_stream_v2(request):
+    """SSE chat with Ollama + tool loop."""
     try:
         body = await request.json()
     except Exception:
@@ -567,14 +664,12 @@ async def handle_chat_stream(request):
             "on_error": on_error,
         },
     )
-
     await send_sse("done", {"id": str(uuid.uuid4())})
     await response.write_eof()
     return response
 
 
 async def handle_log_search(request):
-    """GET /api/logs/search?q=error&source=proxy&level=ERROR&since=1h&limit=50"""
     query = request.query.get("q", "")
     source = request.query.get("source", "")
     level = request.query.get("level", "")
@@ -586,228 +681,20 @@ async def handle_log_search(request):
         results = db_search(query=query, level=level, source=source, since=since, limit=limit)
         return web.json_response({"results": results, "total": len(results)})
     except ImportError:
-        return web.json_response({"error": "log_aggregator not available", "results": [], "total": 0}, status=503)
+        return web.json_response({"results": [], "total": 0, "status": "no_data"})
     except Exception as e:
-        return web.json_response({"error": str(e)}, status=500)
+        return web.json_response({"error": str(e), "results": [], "status": "no_data"}, status=500)
 
 
 async def handle_log_stats(request):
-    """GET /api/logs/stats"""
     try:
         sys.path.insert(0, str(PROJECT_DIR / "services"))
         from log_aggregator import stats as db_stats
         return web.json_response(db_stats())
     except ImportError:
-        return web.json_response({"error": "log_aggregator not available"}, status=503)
+        return web.json_response({"status": "no_data"})
     except Exception as e:
-        return web.json_response({"error": str(e)}, status=500)
-
-
-MARKETPLACE_DIR = PROJECT_DIR / "skills"
-MARKETPLACE_STATE = Path("/tmp/agnetic-marketplace.json")
-MARKETPLACE_HISTORY = Path("/tmp/agnetic-marketplace-history.jsonl")
-
-SKILL_SOURCES = {
-    "hermes": "Hermes Registry",
-    "skillssh": "skills.sh",
-    "github": "GitHub",
-}
-
-CATEGORIES = [
-    "devops", "security", "data", "productivity", "monitoring",
-    "automation", "communication", "analytics", "infrastructure", "ai",
-]
-
-MOCK_SKILLS = [
-    {"id": "k8s-deploy", "name": "k8s-deploy", "description": "Kubernetes deployment automation", "source": "hermes", "version": "1.3.0", "category": "devops", "author": "hermes-core", "downloads": 1240, "security": "safe", "installed": False},
-    {"id": "vault-secrets", "name": "vault-secrets", "description": "HashiCorp Vault secrets manager", "source": "hermes", "version": "2.1.0", "category": "security", "author": "hermes-core", "downloads": 890, "security": "safe", "installed": False},
-    {"id": "log-analyzer", "name": "log-analyzer", "description": "Intelligent log analysis and alerting", "source": "skillssh", "version": "0.9.4", "category": "monitoring", "author": "sysadmin-pro", "downloads": 2100, "security": "safe", "installed": False},
-    {"id": "cron-master", "name": "cron-master", "description": "Advanced cron job management", "source": "skillssh", "version": "1.0.2", "category": "automation", "author": "devops-hub", "downloads": 560, "security": "safe", "installed": False},
-    {"id": "net-scanner", "name": "net-scanner", "description": "Network discovery and port scanning", "source": "github", "version": "3.0.1", "category": "security", "author": "net-tools", "downloads": 3200, "security": "warning", "installed": False},
-    {"id": "backup-pro", "name": "backup-pro", "description": "Automated backup and restore", "source": "hermes", "version": "1.1.0", "category": "infrastructure", "author": "hermes-core", "downloads": 780, "security": "safe", "installed": False},
-    {"id": "slack-bridge", "name": "slack-bridge", "description": "Slack integration for agent notifications", "source": "skillssh", "version": "2.0.0", "category": "communication", "author": "chat-ops", "downloads": 1500, "security": "safe", "installed": False},
-    {"id": "db-migrate", "name": "db-migrate", "description": "Database schema migration tool", "source": "github", "version": "0.8.3", "category": "data", "author": "data-forge", "downloads": 420, "security": "warning", "installed": False},
-    {"id": "gpu-monitor", "name": "gpu-monitor", "description": "GPU utilization tracking and alerts", "source": "hermes", "version": "1.0.0", "category": "monitoring", "author": "hermes-core", "downloads": 950, "security": "safe", "installed": False},
-    {"id": "ml-pipeline", "name": "ml-pipeline", "description": "ML training pipeline orchestrator", "source": "github", "version": "0.5.2", "category": "ai", "author": "ml-ops", "downloads": 670, "security": "dangerous", "installed": False},
-    {"id": "dns-manager", "name": "dns-manager", "description": "DNS zone and record management", "source": "skillssh", "version": "1.2.0", "category": "infrastructure", "author": "net-tools", "downloads": 340, "security": "safe", "installed": False},
-    {"id": "report-gen", "name": "report-gen", "description": "Automated report generation from data", "source": "hermes", "version": "1.4.0", "category": "productivity", "author": "hermes-core", "downloads": 1800, "security": "safe", "installed": False},
-]
-
-
-def _load_marketplace_state():
-    if MARKETPLACE_STATE.exists():
-        try:
-            return json.loads(MARKETPLACE_STATE.read_text())
-        except (json.JSONDecodeError, IOError):
-            pass
-    installed = {}
-    for f in MARKETPLACE_DIR.glob("*/SKILL.md"):
-        skill_id = f.parent.name
-        installed[skill_id] = {
-            "id": skill_id,
-            "name": skill_id,
-            "version": "1.0.0",
-            "source": "hermes",
-            "installed_at": datetime.now().isoformat(),
-            "status": "active",
-            "security": "safe",
-        }
-    _save_marketplace_state({"installed": installed})
-    return {"installed": installed}
-
-
-def _save_marketplace_state(state):
-    MARKETPLACE_STATE.write_text(json.dumps(state, indent=2))
-
-
-def _append_history(entry):
-    entry["timestamp"] = datetime.now().isoformat()
-    MARKETPLACE_HISTORY.parent.mkdir(parents=True, exist_ok=True)
-    with open(MARKETPLACE_HISTORY, "a") as f:
-        f.write(json.dumps(entry) + "\n")
-
-
-def _scan_skill(skill_id):
-    import random
-    score = random.random()
-    if score < 0.65:
-        return {"level": "safe", "score": round(score * 100, 1), "checks": ["no_network_abuse", "no_filesystem_write", "no_privilege_escalation"], "message": "No security issues detected"}
-    elif score < 0.9:
-        return {"level": "warning", "score": round(score * 100, 1), "checks": ["no_network_abuse", "filesystem_write_detected", "no_privilege_escalation"], "message": "Uses filesystem writes — review recommended"}
-    else:
-        return {"level": "dangerous", "score": round(score * 100, 1), "checks": ["network_abuse_risk", "filesystem_write_detected", "privilege_escalation_risk"], "message": "Potentially dangerous — requires manual review"}
-
-
-async def handle_marketplace_search(request):
-    q = request.query.get("q", "").lower()
-    source = request.query.get("source", "all")
-    category = request.query.get("category", "all")
-    results = MOCK_SKILLS[:]
-    state = _load_marketplace_state()
-    installed_ids = set(state.get("installed", {}).keys())
-    if q:
-        results = [s for s in results if q in s["name"].lower() or q in s["description"].lower() or q in s.get("category", "").lower() or q in s.get("author", "").lower()]
-    if source != "all":
-        results = [s for s in results if s["source"] == source]
-    if category != "all":
-        results = [s for s in results if s["category"] == category]
-    for s in results:
-        s["installed"] = s["id"] in installed_ids
-    results.sort(key=lambda s: s["downloads"], reverse=True)
-    return web.json_response({"skills": results, "total": len(results)})
-
-
-async def handle_marketplace_installed(request):
-    state = _load_marketplace_state()
-    installed = state.get("installed", {})
-    result = []
-    for skill_id, info in installed.items():
-        entry = next((s for s in MOCK_SKILLS if s["id"] == skill_id), None)
-        item = {**info}
-        if entry:
-            item["description"] = entry["description"]
-            item["category"] = entry["category"]
-            item["author"] = entry["author"]
-            item["downloads"] = entry["downloads"]
-            item["latest_version"] = entry["version"]
-            item["has_update"] = entry["version"] != info.get("version", "1.0.0")
-        result.append(item)
-    return web.json_response({"installed": result, "total": len(result)})
-
-
-async def handle_marketplace_install(request):
-    try:
-        body = await request.json()
-    except Exception:
-        return web.json_response({"error": "invalid JSON"}, status=400)
-    skill_id = body.get("skill_id", "")
-    if not skill_id:
-        return web.json_response({"error": "skill_id required"}, status=400)
-    skill_info = next((s for s in MOCK_SKILLS if s["id"] == skill_id), None)
-    if not skill_info:
-        return web.json_response({"error": f"skill '{skill_id}' not found"}, status=404)
-    scan_result = _scan_skill(skill_id)
-    state = _load_marketplace_state()
-    installed = state.get("installed", {})
-    if skill_id in installed:
-        return web.json_response({"error": f"skill '{skill_id}' already installed"}, status=409)
-    skill_dir = MARKETPLACE_DIR / skill_id
-    skill_dir.mkdir(parents=True, exist_ok=True)
-    (skill_dir / "SKILL.md").write_text(f"# {skill_info['name']}\n\n{skill_info['description']}\n\n## Security\nScan level: {scan_result['level']}\n")
-    installed[skill_id] = {
-        "id": skill_id,
-        "name": skill_info["name"],
-        "version": skill_info["version"],
-        "source": skill_info["source"],
-        "installed_at": datetime.now().isoformat(),
-        "status": "active",
-        "security": scan_result["level"],
-        "security_detail": scan_result,
-    }
-    state["installed"] = installed
-    _save_marketplace_state(state)
-    _append_history({"action": "install", "skill_id": skill_id, "name": skill_info["name"], "source": skill_info["source"], "version": skill_info["version"], "security": scan_result["level"]})
-    return web.json_response({"status": "installed", "skill": installed[skill_id]})
-
-
-async def handle_marketplace_remove(request):
-    try:
-        body = await request.json()
-    except Exception:
-        return web.json_response({"error": "invalid JSON"}, status=400)
-    skill_id = body.get("skill_id", "")
-    if not skill_id:
-        return web.json_response({"error": "skill_id required"}, status=400)
-    state = _load_marketplace_state()
-    installed = state.get("installed", {})
-    if skill_id not in installed:
-        return web.json_response({"error": f"skill '{skill_id}' not installed"}, status=404)
-    skill_info = installed.pop(skill_id)
-    state["installed"] = installed
-    _save_marketplace_state(state)
-    skill_dir = MARKETPLACE_DIR / skill_id
-    if skill_dir.exists():
-        import shutil
-        shutil.rmtree(skill_dir, ignore_errors=True)
-    _append_history({"action": "remove", "skill_id": skill_id, "name": skill_info.get("name", skill_id), "source": skill_info.get("source", "unknown"), "version": skill_info.get("version", "?")})
-    return web.json_response({"status": "removed", "skill_id": skill_id})
-
-
-async def handle_marketplace_scan(request):
-    try:
-        body = await request.json()
-    except Exception:
-        return web.json_response({"error": "invalid JSON"}, status=400)
-    skill_id = body.get("skill_id", "")
-    if not skill_id:
-        return web.json_response({"error": "skill_id required"}, status=400)
-    scan_result = _scan_skill(skill_id)
-    _append_history({"action": "scan", "skill_id": skill_id, "security": scan_result["level"]})
-    return web.json_response({"skill_id": skill_id, "scan": scan_result})
-
-
-async def handle_marketplace_history(request):
-    limit = min(int(request.query.get("limit", "50")), 500)
-    entries = []
-    if MARKETPLACE_HISTORY.exists():
-        try:
-            lines = MARKETPLACE_HISTORY.read_text().splitlines()
-            for line in reversed(lines[-limit:]):
-                if line.strip():
-                    try:
-                        entries.append(json.loads(line))
-                    except json.JSONDecodeError:
-                        continue
-        except IOError:
-            pass
-    return web.json_response({"history": entries, "total": len(entries)})
-
-
-async def handle_marketplace_page(request):
-    mp_html = PROJECT_DIR / "dashboard" / "marketplace.html"
-    if mp_html.exists():
-        return web.Response(text=mp_html.read_text(), content_type="text/html")
-    return web.Response(text="<h1>Marketplace not found</h1>", content_type="text/html")
+        return web.json_response({"error": str(e), "status": "no_data"}, status=500)
 
 
 async def handle_health(request):
@@ -818,23 +705,30 @@ async def handle_health(request):
         nats_ok = nats.is_connected
     except Exception:
         pass
-
+    online = sum(1 for v in agent_status.values() if v)
+    raw = get_system_telemetry()
+    tel = _normalize_telemetry(raw)
     return web.json_response({
-        "status": "ok",
+        "status": "healthy" if nats_ok or online else "degraded",
         "nats_connected": nats_ok,
         "agents_running": agent_status,
+        "agents_online": online,
+        "agents_total": len(agent_status),
+        "incidents_open": 0,
+        "telemetry": tel,
         "staragent_running": os.system("pgrep -x staragent > /dev/null 2>&1") == 0,
         "timestamp": datetime.now().isoformat(),
     })
 
 
-def _load_fleet_bundle() -> dict:
-    """Assemble fleet topology + runtime state for the plant map."""
-    import yaml as _yaml
+# ── Fleet ───────────────────────────────────────────────────────────────────
 
+def _load_fleet_bundle() -> dict:
+    import yaml as _yaml
     cfg_paths = [
         Path("/etc/starship/fleet.yaml"),
         PROJECT_DIR / "config" / "fleet.yaml",
+        PROJECT_DIR / "fleet.yaml",
     ]
     cfg = {}
     for p in cfg_paths:
@@ -859,7 +753,6 @@ def _load_fleet_bundle() -> dict:
 
     plants = cfg.get("plants", {})
     nodes = state.get("nodes", {})
-    # group nodes by plant
     by_plant = {pid: [] for pid in plants}
     for nid, n in nodes.items():
         plant = n.get("plant") or "unknown"
@@ -893,7 +786,7 @@ async def handle_api_fleet(request):
         return web.json_response(_load_fleet_bundle())
     except Exception as e:
         log.exception("fleet api error")
-        return web.json_response({"error": str(e)}, status=500)
+        return web.json_response({"error": str(e), "plants": [], "status": "no_data"}, status=500)
 
 
 async def handle_api_fleet_plants(request):
@@ -906,20 +799,18 @@ def _fleet_state_path() -> Path:
         Path("/var/lib/starship/fleet-state.json"),
         Path("/tmp/starship-fleet/fleet-state.json"),
     ):
-        if sp.parent.exists() or sp.exists():
-            try:
-                sp.parent.mkdir(parents=True, exist_ok=True)
-                if os.access(sp.parent, os.W_OK):
-                    return sp
-            except Exception:
-                pass
+        try:
+            sp.parent.mkdir(parents=True, exist_ok=True)
+            if os.access(sp.parent, os.W_OK):
+                return sp
+        except Exception:
+            pass
     p = Path("/tmp/starship-fleet/fleet-state.json")
     p.parent.mkdir(parents=True, exist_ok=True)
     return p
 
 
 async def handle_api_fleet_exercise(request):
-    """POST /api/fleet/exercise  body: {"action":"start"|"stop"}"""
     try:
         body = await request.json()
     except Exception:
@@ -937,21 +828,12 @@ async def handle_api_fleet_exercise(request):
             pass
 
     if action == "start":
-        state["exercise"] = {
-            "active": True,
-            "plant": "plant-range",
-            "started": datetime.now().isoformat(),
-        }
+        state["exercise"] = {"active": True, "plant": "plant-range", "started": datetime.now().isoformat()}
     else:
-        state["exercise"] = {
-            "active": False,
-            "plant": None,
-            "stopped": datetime.now().isoformat(),
-        }
+        state["exercise"] = {"active": False, "plant": None, "stopped": datetime.now().isoformat()}
     state["updated"] = datetime.now().isoformat()
     state_path.write_text(json.dumps(state, indent=2))
 
-    # Best-effort NATS dual-publish
     try:
         nats = await get_nats()
         payload = json.dumps(state["exercise"]).encode()
@@ -964,7 +846,6 @@ async def handle_api_fleet_exercise(request):
 
 
 async def handle_api_fleet_register(request):
-    """POST /api/fleet/register — register local node via fleet.py helper logic."""
     try:
         fleet_py = PROJECT_DIR / "services" / "fleet.py"
         if not fleet_py.exists():
@@ -981,15 +862,38 @@ async def handle_api_fleet_register(request):
                 "stdout": out.decode(errors="replace"),
                 "stderr": err.decode(errors="replace"),
             })
-        return web.json_response({"error": "fleet.py not found"}, status=404)
+        return web.json_response({"error": "fleet.py not found", "status": "no_data"}, status=404)
     except Exception as e:
         return web.json_response({"error": str(e)}, status=500)
 
 
+# ── Offline stubs (no active data) ──────────────────────────────────────────
+
+async def handle_no_data(request):
+    return web.json_response({"status": "no_data", "data": [], "message": "No active data"})
+
+
+async def handle_incidents(request):
+    return web.json_response({"incidents": [], "status": "no_data", "message": "No active incidents"})
+
+
+async def handle_marketplace_page(request):
+    for p in (STATIC_DIR.parent / "marketplace.html", PROJECT_DIR / "dashboard" / "marketplace.html"):
+        if p.exists():
+            return web.Response(text=p.read_text(), content_type="text/html")
+    return web.Response(text="<h1>Marketplace not found</h1>", content_type="text/html")
+
+
+# ── App ─────────────────────────────────────────────────────────────────────
+
 app = web.Application()
 app.router.add_get("/", handle_index)
+app.router.add_get("/static/{path:.*}", handle_static)
+app.router.add_get("/marketplace", handle_marketplace_page)
+
 app.router.add_get("/api/dashboard", handle_api_dashboard)
 app.router.add_get("/api/agents", handle_api_agents)
+app.router.add_get("/api/agent/{name}", handle_api_agent_detail)
 app.router.add_get("/api/gpu", handle_api_gpu)
 app.router.add_get("/api/ollama/models", handle_api_ollama_models)
 app.router.add_post("/api/ollama/pull", handle_api_ollama_pull)
@@ -999,23 +903,32 @@ app.router.add_get("/api/logs/stats", handle_log_stats)
 app.router.add_get("/api/logs", handle_logs)
 app.router.add_get("/api/history", handle_history)
 app.router.add_post("/api/send", handle_send)
-app.router.add_post("/api/chat/stream", handle_chat_stream)
+app.router.add_post("/api/chat/stream", handle_chat_stream_v2)
 app.router.add_get("/api/health", handle_health)
 app.router.add_get("/api/fleet", handle_api_fleet)
 app.router.add_get("/api/fleet/plants", handle_api_fleet_plants)
 app.router.add_post("/api/fleet/exercise", handle_api_fleet_exercise)
 app.router.add_post("/api/fleet/register", handle_api_fleet_register)
+app.router.add_get("/api/incidents", handle_incidents)
+app.router.add_get("/api/policy", handle_no_data)
+app.router.add_get("/api/memory", handle_no_data)
+app.router.add_get("/api/skills", handle_no_data)
+app.router.add_get("/api/shield/stats", handle_no_data)
+app.router.add_get("/api/telemetry/stats", handle_no_data)
+app.router.add_get("/api/telemetry/recent", handle_no_data)
+app.router.add_get("/api/accounts", handle_no_data)
+app.router.add_get("/api/orgchart", handle_no_data)
+app.router.add_get("/api/email/addresses", handle_no_data)
+app.router.add_get("/api/healer", handle_no_data)
+app.router.add_get("/api/system/logs", handle_no_data)
+app.router.add_get("/api/monitoring/disk", handle_no_data)
+app.router.add_get("/api/monitoring/cpu", handle_no_data)
 
-app.router.add_get("/marketplace", handle_marketplace_page)
-app.router.add_get("/api/marketplace/search", handle_marketplace_search)
-app.router.add_get("/api/marketplace/installed", handle_marketplace_installed)
-app.router.add_post("/api/marketplace/install", handle_marketplace_install)
-app.router.add_post("/api/marketplace/remove", handle_marketplace_remove)
-app.router.add_post("/api/marketplace/scan", handle_marketplace_scan)
-app.router.add_get("/api/marketplace/history", handle_marketplace_history)
+# static assets last (must not shadow /api/*)
+app.router.add_get("/{name}", handle_static_root)
 
 
-async def cleanup(app):
+async def cleanup(app_):
     global nc
     if nc:
         await nc.close()
@@ -1023,5 +936,6 @@ async def cleanup(app):
 app.on_shutdown.append(cleanup)
 
 if __name__ == "__main__":
-    log.info("Starship Dashboard starting on http://0.0.0.0:%d", PORT)
-    web.run_app(app, host="0.0.0.0", port=PORT)
+    log.info("Starship Command Dashboard on http://0.0.0.0:%d (static=%s project=%s)",
+             PORT, STATIC_DIR, PROJECT_DIR)
+    web.run_app(app, host="0.0.0.0", port=PORT, print=None)
