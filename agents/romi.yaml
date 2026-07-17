@@ -1,10 +1,11 @@
 name: romi
 role: client_agent
-model: qwen2.5:3b
+model: jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest
 provider: ollama
 models:
-  default: qwen2.5:3b
+  default: jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest
   available:
+    - jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest
     - qwen2.5:7b
     - qwen2.5:3b
   providers:

@@ -1,9 +1,9 @@
 name: ergo
 role: automation_agent
-model: qwen2.5:3b
+model: qwen2.5:7b
 provider: ollama
 models:
-  default: qwen2.5:3b
+  default: qwen2.5:7b
   available:
     - qwen2.5:7b
     - qwen2.5:3b

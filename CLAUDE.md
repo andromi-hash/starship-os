@@ -18,9 +18,9 @@ User/Opencode → Hermes Orchestrator
 
 | Agent | Role | Model |
 |---|---|---|
-| **Proxy** | Tech diagnostics, system queries | `qwen2.5:7b` (ollama) |
-| **Romi** | User-facing interface, NL interaction | `qwen2.5:7b` (ollama) |
-| **Ergo** | Automation, scheduled workflows | `jeffgreen311/eve-v2-unleashed-qwen3.5-8b-liberated-4k-4b-merged` |
+| **Proxy** | Tech diagnostics, coding, system queries | `rafw007/qwen35-claude-coder:9b` (ollama) |
+| **Romi** | User-facing interface, NL interaction | `jeffgreen311/eve-v2-unleashed-qwen3.5-8b-liberated-4k-4b-merged` (ollama) |
+| **Ergo** | Automation, scheduled workflows | `qwen2.5:7b` (ollama) |
 | **StarAgent** | Cross-platform system monitor (Rust) | N/A (binary) |
 
 ## Dashboard Tabs
