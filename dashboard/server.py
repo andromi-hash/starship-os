@@ -340,7 +340,7 @@ async def handle_static_root(request):
     if name not in {
         "style.css", "boot.js", "ui.js", "dashboard.js", "agents.js",
         "chat.js", "fleet.js", "incidents.js", "panels.js", "shield.js",
-        "connect.js", "telemetry.js", "policy.js", "skills.js", "memory.js",
+        "connect.js", "telemetry.js", "policy.js", "skills.js", "memory.js", "orgchart.js",
     }:
         return web.Response(status=404, text="Not found")
     return _serve_static_file(name)
@@ -1342,6 +1342,72 @@ def _memory_node_color(agent, role):
     return palette.get(agent, "#8899AA")
 
 
+async def handle_orgchart(request):
+    """Return agent organizational hierarchy."""
+    configs = load_agent_configs()
+    agent_status = await get_agent_process_status()
+
+    # Org hierarchy defined per user's architecture:
+    # User → Romi (UI, primary chat, Simplex connector)
+    #        → Ergo (orchestrator, routes tasks)
+    #             → Proxy (security, always iterating)
+    #                  → StarAgent + others
+    hierarchy = {
+        "romi": {
+            "name": "Romi",
+            "role": "User Interface & Primary Chat",
+            "description": "Primary user-facing agent. Handles conversations over Simplex, dashboard chat, and all main connectors. Users interact directly with Romi.",
+            "model": "Eve-V2-Unleashed",
+            "reports_to": None,
+            "children": ["ergo"],
+            "connectors": ["dashboard", "simplex", "web"],
+        },
+        "ergo": {
+            "name": "Ergo",
+            "role": "Agent Orchestrator",
+            "description": "Orchestrates all agent workflows. Receives tasks from Romi, routes them to the appropriate agent. Manages scheduling, automation, and multi-agent coordination.",
+            "model": "qwen2.5:7b",
+            "reports_to": "romi",
+            "children": ["proxy"],
+            "connectors": [],
+        },
+        "proxy": {
+            "name": "Proxy",
+            "role": "Security & Operations",
+            "description": "Runs continuously iterating on security. Takes tasks from Ergo, performs diagnostics, threat detection, system hardening, and operational execution.",
+            "model": "qwen35-claude-coder:9b",
+            "reports_to": "ergo",
+            "children": ["codex-agent", "designer-agent", "knowledge_store", "system_health", "orchestrator", "staragent"],
+            "connectors": [],
+        },
+    }
+
+    # Sub-agents under Proxy
+    sub_agents = {
+        "codex-agent": {"role": "Code Development", "description": "Code generation, review, and refactoring tasks."},
+        "designer-agent": {"role": "Design & UX", "description": "UI/UX design, asset generation, design review."},
+        "knowledge_store": {"role": "Knowledge Management", "description": "Memory, vector search, information retrieval."},
+        "system_health": {"role": "System Monitoring", "description": "Health checks, metric collection, alerting."},
+        "orchestrator": {"role": "Meta-Orchestration", "description": "Cross-agent workflow coordination."},
+        "staragent": {"role": "Telemetry Collection", "description": "System metric collection from remote endpoints."},
+    }
+
+    # Merge status from live data
+    for agent_id, info in hierarchy.items():
+        name = info["name"].lower()
+        info["online"] = agent_status.get(name, False)
+    for agent_id in sub_agents:
+        status = agent_status.get(agent_id, False)
+        sub_agents[agent_id]["online"] = status
+
+    return web.json_response({
+        "hierarchy": hierarchy,
+        "sub_agents": sub_agents,
+        "agents": configs,
+        "timestamp": datetime.utcnow().isoformat(),
+    })
+
+
 async def handle_marketplace_page(request):
     for p in (STATIC_DIR.parent / "marketplace.html", PROJECT_DIR / "dashboard" / "marketplace.html"):
         if p.exists():
@@ -1714,7 +1780,7 @@ app.router.add_get("/api/shield/stats", handle_shield_stats)
 app.router.add_get("/api/telemetry/stats", handle_no_data)
 app.router.add_get("/api/telemetry/recent", handle_telemetry_recent)
 app.router.add_get("/api/accounts", handle_no_data)
-app.router.add_get("/api/orgchart", handle_no_data)
+app.router.add_get("/api/orgchart", handle_orgchart)
 app.router.add_get("/api/email/addresses", handle_no_data)
 app.router.add_get("/api/healer", handle_no_data)
 app.router.add_get("/api/system/logs", handle_no_data)

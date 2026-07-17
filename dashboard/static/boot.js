@@ -52,6 +52,7 @@ async function refreshActiveView() {
     else if (view === 'policy') await renderPolicyView(target);
     else if (view === 'skills') await renderSkillsView(target);
     else if (view === 'memory') await renderMemoryView(target);
+    else if (view === 'orgchart') await renderOrgChartView(target);
   } catch (e) {
     console.error('refresh view', view, e);
   }

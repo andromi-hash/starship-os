@@ -132,9 +132,9 @@ function renderView(view) {
     case 'memory': renderMemoryView(target); break;
     case 'skills': renderSkillsView(target); break;
     case 'telemetry': renderTelemetryView(target); break;
+    case 'orgchart': renderOrgChartView(target); break;
     case 'accounts':
     case 'email':
-    case 'orgchart':
     case 'goals':
       renderOfflinePanel(target, view);
       break;
