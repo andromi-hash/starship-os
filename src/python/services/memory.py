@@ -30,6 +30,9 @@ class MemoryType(Enum):
     RETRIEVAL = "retrieval"
     PARAMETRIC = "parametric"
     PROSPECTIVE = "prospective"
+    TEMPORAL = "temporal"
+    KNOWLEDGE_GRAPH = "knowledge_graph"
+    PREFERENCE = "preference"
 
 
 MEMORY_DESCRIPTIONS = {
@@ -40,6 +43,9 @@ MEMORY_DESCRIPTIONS = {
     MemoryType.RETRIEVAL: "External documents and history chunks pulled via vector similarity search",
     MemoryType.PARAMETRIC: "Knowledge baked into LLM weights during training — language, reasoning, world knowledge",
     MemoryType.PROSPECTIVE: "Future intentions, scheduled goals, pending plans — remembered commitments",
+    MemoryType.TEMPORAL: "State transitions for compliance — before/after entity state tracking",
+    MemoryType.KNOWLEDGE_GRAPH: "Entity-relation triples — structured knowledge as subject-predicate-object",
+    MemoryType.PREFERENCE: "Structured user/operator preferences extracted from interaction",
 }
 
 

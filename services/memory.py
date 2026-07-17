@@ -83,6 +83,8 @@ class MemoryType(Enum):
     PROCEDURAL = "procedural"    # How to do things (learned skills)
     PREFERENCE = "preference"    # User preferences and settings
     DECISION = "decision"        # Past decisions and rationale
+    TEMPORAL = "temporal"        # State transitions for compliance
+    KNOWLEDGE_GRAPH = "knowledge_graph"  # Entity-relation triples
 
 
 @dataclass

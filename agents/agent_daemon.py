@@ -213,6 +213,7 @@ async def _consume_msgs(sub, handler):
 
 SKILLS_DIR = _PROJECT_ROOT / "skills"
 SOULS_DIR = _PROJECT_ROOT / "souls"
+MEMORY_DIR = _PROJECT_ROOT / "memory"
 
 
 def load_skill_content(skill_names):
@@ -240,6 +241,30 @@ def load_soul(agent_name):
         except Exception as e:
             log.warning("Failed to load soul for '%s': %s", agent_name, e)
     log.info("No soul file found for '%s', using generic personality", agent_name)
+    return None
+
+
+def load_memory_context(agent_name):
+    """Load the MEMORY.md and USER.md files for an agent as a frozen snapshot."""
+    memory_path = MEMORY_DIR / agent_name / "MEMORY.md"
+    user_path = MEMORY_DIR / agent_name / "USER.md"
+    parts = []
+    if memory_path.exists():
+        try:
+            content = memory_path.read_text().strip()
+            if content:
+                parts.append(f"=== Agent Notes ===\n{content}")
+        except Exception as e:
+            log.warning("Failed to load MEMORY.md for '%s': %s", agent_name, e)
+    if user_path.exists():
+        try:
+            content = user_path.read_text().strip()
+            if content:
+                parts.append(f"=== User Profile (frozen at session start) ===\n{content}")
+        except Exception as e:
+            log.warning("Failed to load USER.md for '%s': %s", agent_name, e)
+    if parts:
+        return "\n\n".join(parts)
     return None
 
 
@@ -290,6 +315,9 @@ async def process_command(agent_name, config, subject, payload, telemetry=None, 
     soul = load_soul(agent_name)
     skill_context = load_skill_content(skills)
     skill_block = f"\n\n## Active Skills\n{skill_context}" if skill_context else ""
+
+    memory_context = load_memory_context(agent_name)
+    memory_block = f"\n\n## Persistent Memory (frozen at session start)\n{memory_context}" if memory_context else ""
     
     operational_context = (
         f"\n\n## Operational Context\n"
@@ -302,6 +330,7 @@ async def process_command(agent_name, config, subject, payload, telemetry=None, 
         system_prompt = (
             f"{soul}\n"
             f"{skill_block}"
+            f"{memory_block}"
             f"{operational_context}"
         )
     else:
@@ -310,6 +339,7 @@ async def process_command(agent_name, config, subject, payload, telemetry=None, 
             f"Your capabilities: {', '.join(capabilities) if capabilities else 'general assistance'}.\n"
             f"You operate via the NATS agent bus. Respond concisely and accurately.\n"
             f"{skill_block}"
+            f"{memory_block}"
             f"{operational_context}"
         )
     
@@ -321,6 +351,15 @@ async def process_command(agent_name, config, subject, payload, telemetry=None, 
     log.info("Processing command '%s' for agent '%s' (tools=%s)", command, agent_name, use_tools)
     response = await query_ollama(model, user_prompt, system=system_prompt, tools=use_tools, nats=nats)
     log.info("Response received (%d chars) for '%s'", len(response), command)
+
+    try:
+        from services.archive import ArchiveService
+        arch = ArchiveService()
+        arch.write(agent=agent_name, command=command, response=response[:5000])
+        arch.close()
+    except Exception:
+        pass
+
     return response
 
 

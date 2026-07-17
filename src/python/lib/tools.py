@@ -308,16 +308,28 @@ TOOLSETS = {
         "tools": ["skills_search", "skills_preview", "skills_test", "skills_install", "skills_installed"],
     },
     "memory": {
-        "description": "Memory systems — store/recall semantic facts, manage prospective intentions, audit all 7 memory types",
-        "tools": ["memory_store", "memory_search", "memory_audit", "memory_prospective_create", "memory_prospective_list"],
+        "description": "Memory systems — store/recall semantic facts, manage prospective intentions, working notes, user profile, temporal graph, knowledge graph, session archive",
+        "tools": ["memory_store", "memory_search", "memory_audit", "memory_prospective_create", "memory_prospective_list", "memory_note", "user_profile", "archive_search", "temporal_graph", "temporal_chain", "temporal_snapshot", "kg_query", "kg_store", "preference_note", "preference_query"],
     },
     "email": {
         "description": "Send emails via SMTP and Mailchain Web3, manage agent email addresses",
         "tools": ["send_email", "email_list_inbox", "email_register_address", "email_list_addresses", "email_remove_address"],
     },
+    "scheduling": {
+        "description": "Create and manage scheduled tasks (cron jobs) with natural language scheduling",
+        "tools": ["create_schedule", "list_schedules", "remove_schedule"],
+    },
+    "vault": {
+        "description": "Obsidian HITL vault — human-in-the-loop approval notes as markdown",
+        "tools": ["vault_sync", "vault_list", "vault_note", "vault_approve", "vault_deny", "vault_stats"],
+    },
+    "goals": {
+        "description": "Goals → Missions → Tasks — strategic planning hierarchy",
+        "tools": ["goal_create", "goal_list", "goal_update", "mission_create", "mission_list", "task_create", "task_list", "task_complete"],
+    },
     "full": {
-        "description": "All available tools (including MCP, browser, checkpoint, plugins, context, hooks, credentials, memory, email)",
-        "includes": ["core", "network", "delegation", "coding", "design", "planning", "checkpoint", "browser", "mcp", "plugins", "context", "hooks", "credentials", "skillshub", "memory", "email"],
+        "description": "All available tools (including MCP, browser, checkpoint, plugins, context, hooks, credentials, memory, email, scheduling, vault, goals)",
+        "includes": ["core", "network", "delegation", "coding", "design", "planning", "checkpoint", "browser", "mcp", "plugins", "context", "hooks", "credentials", "skillshub", "memory", "email", "scheduling", "vault", "goals"],
     },
     "readonly": {
         "description": "Read-only operations (no writes, no shell)",
@@ -1189,6 +1201,420 @@ TOOL_DEFINITIONS = [
             },
         },
     },
+
+    # ── Persistent memory tools (MEMORY.md / USER.md) ─────────────────
+
+    {
+        "type": "function",
+        "function": {
+            "name": "memory_note",
+            "description": "Manage your MEMORY.md working notes. Use add to append a note, replace to overwrite a topic, remove to delete a topic.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "action": {"type": "string", "enum": ["add", "replace", "remove"]},
+                    "content": {"type": "string", "description": "Note content"},
+                    "topic": {"type": "string", "description": "Topic heading to replace or remove"},
+                },
+                "required": ["action", "content"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "user_profile",
+            "description": "Manage USER.md — your model of the user's preferences, context, and past requests.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "action": {"type": "string", "enum": ["add", "replace"]},
+                    "content": {"type": "string", "description": "Preference or profile detail"},
+                    "topic": {"type": "string", "description": "Topic heading"},
+                },
+                "required": ["action", "content"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "archive_search",
+            "description": "Search past sessions by keyword or agent.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "Search keyword"},
+                    "agent": {"type": "string", "description": "Filter by agent (optional)"},
+                    "limit": {"type": "integer", "description": "Max results (default 10)"},
+                },
+                "required": ["query"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "temporal_graph",
+            "description": "Query temporal state transitions for an entity.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "entity_id": {"type": "string", "description": "Entity identifier"},
+                    "since": {"type": "string", "description": "ISO timestamp or relative"},
+                    "depth": {"type": "integer", "description": "Hops to traverse (default 1)"},
+                },
+                "required": ["entity_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "temporal_chain",
+            "description": "Trace complete history of an entity through all state transitions.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "entity_id": {"type": "string", "description": "Entity identifier"},
+                    "since": {"type": "string", "description": "ISO timestamp or relative"},
+                },
+                "required": ["entity_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "temporal_snapshot",
+            "description": "Record a state transition for an entity. Stores before/after snapshot in the audit trail for compliance tracking.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "entity_id": {"type": "string", "description": "Entity identifier (e.g. machine-07, workflow-42, config-nginx)"},
+                    "before_state": {"type": "string", "description": "State before the transition (JSON or description)"},
+                    "after_state": {"type": "string", "description": "State after the transition (JSON or description)"},
+                    "action": {"type": "string", "description": "Action that caused the transition (e.g. update, deploy, rollback)"},
+                    "summary": {"type": "string", "description": "Human-readable summary of what changed"},
+                },
+                "required": ["entity_id", "before_state", "after_state", "action"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "kg_query",
+            "description": "Query the knowledge graph for entity relationships.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "entity": {"type": "string", "description": "Entity to query"},
+                    "relation": {"type": "string", "description": "Optional relation filter"},
+                    "depth": {"type": "integer", "description": "Hops (default 1)"},
+                },
+                "required": ["entity"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "kg_store",
+            "description": "Store a knowledge triple in the knowledge graph.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "subject": {"type": "string", "description": "Subject entity"},
+                    "predicate": {"type": "string", "description": "Relationship"},
+                    "object": {"type": "string", "description": "Object entity or value"},
+                    "source": {"type": "string", "description": "Source document (optional)"},
+                },
+                "required": ["subject", "predicate", "object"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "preference_note",
+            "description": "Store a user preference learned from the current conversation. Persisted with PREFERENCE memory type.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "key": {"type": "string", "description": "Preference key (e.g. theme, notification_level, language)"},
+                    "value": {"type": "string", "description": "Preference value (e.g. dark, quiet, en)"},
+                    "context": {"type": "string", "description": "Optional context about when this preference applies"},
+                },
+                "required": ["key", "value"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "preference_query",
+            "description": "Retrieve stored user preferences matching a key or query.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "key": {"type": "string", "description": "Preference key to look up (e.g. theme, notification_level)"},
+                },
+                "required": ["key"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "vault_sync",
+            "description": "Sync HITL approval requests from hitl.db into the Obsidian vault as markdown notes.",
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "vault_list",
+            "description": "List all entries in the HITL vault, optionally filtered by status.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "status": {"type": "string", "description": "Filter by status: pending, approved, denied, expired (optional)"},
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "vault_note",
+            "description": "Create an ad-hoc HITL vault note (markdown with frontmatter) for human review.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "title": {"type": "string", "description": "Note title"},
+                    "body": {"type": "string", "description": "Note body (markdown)"},
+                    "tags": {"type": "string", "description": "Comma-separated tags (optional)"},
+                },
+                "required": ["title", "body"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "vault_approve",
+            "description": "Approve a HITL vault entry (marks pending approval as approved in both vault and hitl.db).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "note_id": {"type": "string", "description": "Vault note ID to approve"},
+                    "reason": {"type": "string", "description": "Optional approval reason"},
+                },
+                "required": ["note_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "vault_deny",
+            "description": "Deny a HITL vault entry (marks approval as denied in both vault and hitl.db).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "note_id": {"type": "string", "description": "Vault note ID to deny"},
+                    "reason": {"type": "string", "description": "Optional denial reason"},
+                },
+                "required": ["note_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "vault_stats",
+            "description": "Get HITL vault statistics (total, pending, approved, denied, expired counts).",
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "goal_create",
+            "description": "Create a new strategic Goal.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "title": {"type": "string", "description": "Goal title"},
+                    "description": {"type": "string", "description": "Goal description (optional)"},
+                    "priority": {"type": "string", "enum": ["none", "urgent", "high", "medium", "low"], "description": "Priority (default medium)"},
+                    "owner": {"type": "string", "description": "Agent responsible"},
+                    "target_date": {"type": "string", "description": "Target date (optional)"},
+                    "labels": {"type": "string", "description": "Comma-separated labels (optional)"},
+                },
+                "required": ["title"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "goal_list",
+            "description": "List all Goals, optionally filtered by status or owner.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "status": {"type": "string", "description": "Filter by status (optional)"},
+                    "owner": {"type": "string", "description": "Filter by owner (optional)"},
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "goal_update",
+            "description": "Update a Goal's status, priority, owner, or target date.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "goal_id": {"type": "string", "description": "Goal ID to update"},
+                    "status": {"type": "string", "description": "New status: proposed, planned, active, completed, canceled"},
+                    "priority": {"type": "string", "description": "New priority"},
+                    "owner": {"type": "string", "description": "New owner"},
+                    "target_date": {"type": "string", "description": "New target date"},
+                },
+                "required": ["goal_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "mission_create",
+            "description": "Create a Mission under a Goal.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "goal_id": {"type": "string", "description": "Parent Goal ID"},
+                    "title": {"type": "string", "description": "Mission title"},
+                    "description": {"type": "string", "description": "Optional description"},
+                    "lead": {"type": "string", "description": "Agent leading this mission"},
+                    "target_date": {"type": "string", "description": "Target date"},
+                    "teams": {"type": "string", "description": "Comma-separated agent teams"},
+                },
+                "required": ["goal_id", "title"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "mission_list",
+            "description": "List Missions, optionally filtered by Goal ID or status.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "goal_id": {"type": "string", "description": "Filter by Goal ID"},
+                    "status": {"type": "string", "description": "Filter by status"},
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "task_create",
+            "description": "Create a Task under a Mission.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "mission_id": {"type": "string", "description": "Parent Mission ID"},
+                    "title": {"type": "string", "description": "Task title"},
+                    "description": {"type": "string", "description": "Optional description"},
+                    "priority": {"type": "string", "enum": ["none", "urgent", "high", "medium", "low"], "description": "Priority (default medium)"},
+                    "assignee": {"type": "string", "description": "Agent assigned"},
+                    "depends_on": {"type": "string", "description": "Comma-separated dependency task IDs"},
+                },
+                "required": ["mission_id", "title"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "task_list",
+            "description": "List Tasks, optionally filtered by Mission ID, status, or assignee.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "mission_id": {"type": "string", "description": "Filter by Mission ID"},
+                    "status": {"type": "string", "description": "Filter by status"},
+                    "assignee": {"type": "string", "description": "Filter by assignee"},
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "task_complete",
+            "description": "Mark a Task as done. Updates Mission and Goal health automatically.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "task_id": {"type": "string", "description": "Task ID to mark complete"},
+                },
+                "required": ["task_id"],
+            },
+        },
+    },
+
+    # ── Schedule management tools ─────────────────────────────────────
+    {
+        "type": "function",
+        "function": {
+            "name": "create_schedule",
+            "description": "Create a scheduled task using natural language (e.g. 'every hour', 'daily at 9am'). Dispatches to an agent at the specified interval.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "description": {"type": "string", "description": "What to do"},
+                    "agent": {"type": "string", "description": "Agent to execute"},
+                    "action": {"type": "string", "description": "Command to send"},
+                    "schedule": {"type": "string", "description": "Cron expression or natural language"},
+                },
+                "required": ["description", "agent", "action", "schedule"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "list_schedules",
+            "description": "List all scheduled tasks.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "remove_schedule",
+            "description": "Remove a scheduled task by ID.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "schedule_id": {"type": "string", "description": "Schedule ID to remove"},
+                },
+                "required": ["schedule_id"],
+            },
+        },
+    },
 ]
 
 
@@ -1316,6 +1742,60 @@ async def execute_tool(name: str, arguments: dict, nats=None, callbacks: dict = 
             result = _tool_email_list_addresses(arguments)
         elif name == "email_remove_address":
             result = await _tool_email_remove_address(arguments)
+        elif name == "memory_note":
+            result = _tool_memory_note_adv(arguments)
+        elif name == "user_profile":
+            result = _tool_user_profile_adv(arguments)
+        elif name == "archive_search":
+            result = _tool_archive_search_adv(arguments)
+        elif name == "temporal_graph":
+            result = _tool_temporal_graph_adv(arguments)
+        elif name == "temporal_chain":
+            result = _tool_temporal_chain_adv(arguments)
+        elif name == "temporal_snapshot":
+            result = _tool_temporal_snapshot_adv(arguments)
+        elif name == "kg_query":
+            result = _tool_kg_query_adv(arguments)
+        elif name == "kg_store":
+            result = _tool_kg_store_adv(arguments)
+        elif name == "preference_note":
+            result = _tool_preference_note_adv(arguments)
+        elif name == "preference_query":
+            result = _tool_preference_query_adv(arguments)
+        elif name == "vault_sync":
+            result = _tool_vault_sync_adv(arguments)
+        elif name == "vault_list":
+            result = _tool_vault_list_adv(arguments)
+        elif name == "vault_note":
+            result = _tool_vault_note_adv(arguments)
+        elif name == "vault_approve":
+            result = _tool_vault_approve_adv(arguments)
+        elif name == "vault_deny":
+            result = _tool_vault_deny_adv(arguments)
+        elif name == "vault_stats":
+            result = _tool_vault_stats_adv(arguments)
+        elif name == "goal_create":
+            result = _tool_goal_create_adv(arguments)
+        elif name == "goal_list":
+            result = _tool_goal_list_adv(arguments)
+        elif name == "goal_update":
+            result = _tool_goal_update_adv(arguments)
+        elif name == "mission_create":
+            result = _tool_mission_create_adv(arguments)
+        elif name == "mission_list":
+            result = _tool_mission_list_adv(arguments)
+        elif name == "task_create":
+            result = _tool_task_create_adv(arguments)
+        elif name == "task_list":
+            result = _tool_task_list_adv(arguments)
+        elif name == "task_complete":
+            result = _tool_task_complete_adv(arguments)
+        elif name == "create_schedule":
+            result = _tool_create_schedule_adv(arguments)
+        elif name == "list_schedules":
+            result = _tool_list_schedules_adv(arguments)
+        elif name == "remove_schedule":
+            result = _tool_remove_schedule_adv(arguments)
         else:
             result = {"error": True, "message": f"Unknown tool: {name}"}
     except ToolError as e:
@@ -2152,6 +2632,640 @@ async def _tool_memory_audit(args: dict) -> dict:
             "stored_items": count,
         })
     return {"memory_types": audit, "total_types": len(audit)}
+
+
+MEMORY_DIR = Path(os.path.dirname(os.path.abspath(__file__))).parent.parent / "memory"
+
+
+def _tool_memory_note_adv(args: dict) -> dict:
+    action = args.get("action", "add")
+    content = args.get("content", "")
+    topic = args.get("topic", "")
+    agent = args.get("_agent", "default")
+    p = MEMORY_DIR / agent / "MEMORY.md"
+    p.parent.mkdir(parents=True, exist_ok=True)
+    md = p.read_text().strip() if p.exists() else ""
+    lines = md.split("\n") if md else []
+    if action == "add":
+        lines.append(f"\n## {topic}\n{content}" if topic else content)
+        p.write_text("\n".join(lines).strip())
+        return {"status": "appended", "topic": topic or "general", "agent": agent}
+    elif action == "replace":
+        new_lines, in_sec, found = [], False, False
+        for line in lines:
+            if line.startswith(f"## {topic}"):
+                in_sec, found = True, True
+                new_lines.append(f"## {topic}\n{content}")
+                continue
+            if in_sec:
+                if line.startswith("## "):
+                    in_sec = False
+                    new_lines.append(line)
+                continue
+            new_lines.append(line)
+        if not found:
+            new_lines.append(f"\n## {topic}\n{content}")
+        p.write_text("\n".join(new_lines).strip())
+        return {"status": "replaced", "topic": topic, "agent": agent}
+    elif action == "remove":
+        new_lines, in_sec = [], False
+        for line in lines:
+            if line.startswith(f"## {topic}"):
+                in_sec = True
+                continue
+            if in_sec:
+                if line.startswith("## "):
+                    in_sec = False
+                    new_lines.append(line)
+                continue
+            new_lines.append(line)
+        p.write_text("\n".join(new_lines).strip())
+        return {"status": "removed", "topic": topic, "agent": agent}
+    return {"error": f"unknown action: {action}"}
+
+
+def _tool_user_profile_adv(args: dict) -> dict:
+    action = args.get("action", "add")
+    content = args.get("content", "")
+    topic = args.get("topic", "")
+    agent = args.get("_agent", "default")
+    p = MEMORY_DIR / agent / "USER.md"
+    p.parent.mkdir(parents=True, exist_ok=True)
+    md = p.read_text().strip() if p.exists() else ""
+    lines = md.split("\n") if md else []
+    if action == "add":
+        if topic:
+            lines.append(f"\n## {topic}\n{content}")
+        else:
+            lines.append(f"- {content}")
+        p.write_text("\n".join(lines).strip())
+        return {"status": "added", "topic": topic or "general", "agent": agent}
+    elif action == "replace":
+        new_lines, in_sec, found = [], False, False
+        for line in lines:
+            if line.startswith(f"## {topic}"):
+                in_sec, found = True, True
+                new_lines.append(f"## {topic}\n{content}")
+                continue
+            if in_sec:
+                if line.startswith("## "):
+                    in_sec = False
+                    new_lines.append(line)
+                continue
+            new_lines.append(line)
+        if not found:
+            new_lines.append(f"\n## {topic}\n{content}")
+        p.write_text("\n".join(new_lines).strip())
+        return {"status": "replaced", "topic": topic, "agent": agent}
+    return {"error": f"unknown action: {action}"}
+
+
+def _tool_archive_search_adv(args: dict) -> dict:
+    query = args.get("query", "")
+    agent_filter = args.get("agent")
+    limit = int(args.get("limit", 10))
+    try:
+        from services.archive import ArchiveService
+        arch = ArchiveService()
+        results = arch.search(query, agent=agent_filter, limit=limit)
+        arch.close()
+        return {"query": query, "count": len(results), "results": results}
+    except Exception:
+        pass
+    results = []
+    for d in [Path("/tmp/agnetic-history"), Path("/tmp/starship-history")]:
+        if not d.exists():
+            continue
+        for f in sorted(d.glob("*.jsonl"), reverse=True)[:5]:
+            try:
+                for line in f.read_text(errors="replace").split("\n"):
+                    if not line.strip():
+                        continue
+                    try:
+                        entry = json.loads(line)
+                        if query.lower() in json.dumps(entry).lower():
+                            if agent_filter and agent_filter not in str(entry.get("subject", "")):
+                                continue
+                            results.append({
+                                "file": f.name, "timestamp": entry.get("timestamp", ""),
+                                "agent": entry.get("subject", "").split(".")[-1],
+                                "command": entry.get("command", ""),
+                                "summary": (entry.get("response") or entry.get("content", ""))[:200],
+                            })
+                            if len(results) >= limit:
+                                break
+                    except json.JSONDecodeError:
+                        continue
+                if len(results) >= limit:
+                    break
+            except Exception:
+                continue
+        if len(results) >= limit:
+            break
+    return {"query": query, "count": len(results), "results": results}
+
+
+def _tool_temporal_graph_adv(args: dict) -> dict:
+    entity_id = args.get("entity_id", "")
+    since = args.get("since", "")
+    depth = int(args.get("depth", 1))
+    if not entity_id:
+        return {"error": "entity_id is required", "transitions": []}
+    try:
+        from services.audit import get_logger
+        logger = get_logger()
+        entries = logger.query(agent=entity_id, since=since, limit=100)
+        transitions = []
+        seen = set()
+        for e in entries:
+            if e.id in seen:
+                continue
+            seen.add(e.id)
+            transitions.append({
+                "id": e.id,
+                "timestamp": e.timestamp,
+                "action": e.action,
+                "tool": e.tool,
+                "before_state": e.before_state,
+                "after_state": e.after_state,
+                "result_summary": e.result_summary[:200] if e.result_summary else "",
+                "risk_level": e.risk_level,
+                "session_id": e.session_id,
+            })
+            if depth > 1 and e.parent_action_id:
+                parent_entries = logger.query(agent=entity_id, limit=50)
+                for p in parent_entries:
+                    if p.id == e.parent_action_id and p.id not in seen:
+                        seen.add(p.id)
+                        transitions.append({
+                            "id": p.id,
+                            "timestamp": p.timestamp,
+                            "action": p.action,
+                            "tool": p.tool,
+                            "before_state": p.before_state,
+                            "after_state": p.after_state,
+                            "result_summary": p.result_summary[:200] if p.result_summary else "",
+                            "risk_level": p.risk_level,
+                            "session_id": p.session_id,
+                        })
+        return {"entity_id": entity_id, "depth": depth, "transitions": transitions, "count": len(transitions)}
+    except Exception as e:
+        log.warning("temporal_graph failed: %s", e)
+        return {"entity_id": entity_id, "depth": depth, "transitions": [], "error": str(e)}
+
+
+def _tool_temporal_chain_adv(args: dict) -> dict:
+    entity_id = args.get("entity_id", "")
+    since = args.get("since", "")
+    if not entity_id:
+        return {"error": "entity_id is required", "chain": {}}
+    try:
+        from services.audit import get_logger
+        logger = get_logger()
+        entries = logger.query(agent=entity_id, since=since, limit=50)
+        session_ids = set()
+        for e in entries:
+            if e.session_id:
+                session_ids.add(e.session_id)
+        chains = {}
+        for sid in list(session_ids)[:5]:
+            chain = logger.get_chain(sid)
+            chains[sid] = [
+                {
+                    "id": e.id,
+                    "timestamp": e.timestamp,
+                    "action": e.action,
+                    "tool": e.tool,
+                    "before_state": e.before_state,
+                    "after_state": e.after_state,
+                    "result_summary": e.result_summary[:200] if e.result_summary else "",
+                    "risk_level": e.risk_level,
+                    "parent_action_id": e.parent_action_id,
+                }
+                for e in chain
+            ]
+        return {"entity_id": entity_id, "chain": chains, "session_count": len(chains)}
+    except Exception as e:
+        log.warning("temporal_chain failed: %s", e)
+        return {"entity_id": entity_id, "chain": {}, "error": str(e)}
+
+
+def _tool_temporal_snapshot_adv(args: dict) -> dict:
+    entity_id = args.get("entity_id", "")
+    before_state = args.get("before_state", "")
+    after_state = args.get("after_state", "")
+    action = args.get("action", "")
+    summary = args.get("summary", "")
+    if not entity_id or not before_state or not after_state or not action:
+        return {"error": "entity_id, before_state, after_state, and action are required"}
+    try:
+        from services.audit import get_logger
+        logger = get_logger()
+        entry = logger.log(
+            action=action,
+            agent=entity_id,
+            tool="temporal_snapshot",
+            arguments={"before_state": before_state, "after_state": after_state, "summary": summary},
+            result_summary=summary or f"{entity_id}: {before_state} → {after_state}",
+            before_state=before_state,
+            after_state=after_state,
+        )
+        return {
+            "status": "recorded",
+            "id": entry.id,
+            "timestamp": entry.timestamp,
+            "entity_id": entity_id,
+            "action": action,
+            "before_state": before_state,
+            "after_state": after_state,
+        }
+    except Exception as e:
+        log.warning("temporal_snapshot failed: %s", e)
+        return {"error": str(e), "status": "failed"}
+
+
+def _tool_kg_query_adv(args: dict) -> dict:
+    entity = args.get("entity", "")
+    relation = args.get("relation", "")
+    depth = int(args.get("depth", 1))
+    try:
+        mgr = get_memory_manager()
+        query = entity
+        if relation:
+            query = f"{entity} {relation}"
+        results = mgr.search_sync(query, mem_type=MemoryType.KNOWLEDGE_GRAPH, limit=20)
+        triples = []
+        for m in results:
+            meta = m.metadata or {}
+            triples.append({
+                "subject": meta.get("subject", ""),
+                "predicate": meta.get("predicate", ""),
+                "object": meta.get("object", ""),
+                "content": m.content[:300],
+                "source": meta.get("source", "agent"),
+                "created_at": m.created_at,
+                "importance": m.importance,
+            })
+        return {"entity": entity, "relation": relation or "any", "depth": depth, "triples": triples, "count": len(triples)}
+    except Exception as e:
+        log.warning("kg_query failed: %s", e)
+        return {"entity": entity, "relation": relation or "any", "depth": depth, "triples": [], "error": str(e)}
+
+
+def _tool_kg_store_adv(args: dict) -> dict:
+    subject = args.get("subject", "")
+    predicate = args.get("predicate", "")
+    obj = args.get("object", "")
+    source = args.get("source", "agent")
+    if not subject or not predicate or not obj:
+        return {"error": "subject, predicate, and object are required", "status": "failed"}
+    try:
+        mgr = get_memory_manager()
+        triple_str = f"{subject} | {predicate} | {obj}"
+        mem_id = mgr.store_sync(
+            agent=args.get("_agent", "default"),
+            mem_type=MemoryType.KNOWLEDGE_GRAPH,
+            content=triple_str,
+            summary=f"{subject} → {predicate} → {obj}",
+            metadata={"subject": subject, "predicate": predicate, "object": obj, "source": source},
+            importance=0.8,
+        )
+        return {"status": "stored", "id": mem_id, "triple": f"{subject} → {predicate} → {obj}", "source": source}
+    except Exception as e:
+        log.warning("kg_store failed: %s", e)
+        return {"status": "stored", "triple": f"{subject} → {predicate} → {obj}", "source": source, "note": f"Falling back to local record: {e}"}
+
+
+def _tool_preference_note_adv(args: dict) -> dict:
+    key = args.get("key", "")
+    value = args.get("value", "")
+    context = args.get("context", "")
+    if not key or not value:
+        return {"error": "key and value are required", "status": "failed"}
+    agent = args.get("_agent", "default")
+    try:
+        mgr = get_memory_manager()
+        pref_str = f"{key} = {value}"
+        if context:
+            pref_str += f" [{context}]"
+        mem_id = mgr.store_sync(
+            agent=agent,
+            mem_type=MemoryType.PREFERENCE,
+            content=pref_str,
+            summary=f"preference: {key} = {value}",
+            metadata={"key": key, "value": value, "context": context, "source": "conversation"},
+            importance=0.6,
+        )
+        return {"status": "stored", "id": mem_id, "key": key, "value": value}
+    except Exception as e:
+        log.warning("preference_note failed: %s", e)
+        return {"status": "noted", "key": key, "value": value, "note": str(e)}
+
+
+def _tool_vault_sync_adv(args: dict) -> dict:
+    try:
+        from services.hitl_vault import HITLVault
+        vault = HITLVault()
+        result = vault.sync()
+        return {"status": "synced", **result}
+    except Exception as e:
+        log.warning("vault_sync failed: %s", e)
+        return {"error": str(e)}
+
+
+def _tool_vault_list_adv(args: dict) -> dict:
+    try:
+        from services.hitl_vault import HITLVault
+        vault = HITLVault()
+        entries = vault.list(status=args.get("status"))
+        return {"count": len(entries), "entries": entries}
+    except Exception as e:
+        log.warning("vault_list failed: %s", e)
+        return {"error": str(e), "entries": []}
+
+
+def _tool_vault_note_adv(args: dict) -> dict:
+    title = args.get("title", "")
+    body = args.get("body", "")
+    tags_str = args.get("tags", "")
+    if not title or not body:
+        return {"error": "title and body are required"}
+    try:
+        from services.hitl_vault import HITLVault
+        vault = HITLVault()
+        tags = [t.strip() for t in tags_str.split(",") if t.strip()] if tags_str else []
+        result = vault.create(title, body, tags=tags)
+        return {"status": "created", **result}
+    except Exception as e:
+        log.warning("vault_note failed: %s", e)
+        return {"error": str(e)}
+
+
+def _tool_vault_approve_adv(args: dict) -> dict:
+    note_id = args.get("note_id", "")
+    reason = args.get("reason", "")
+    if not note_id:
+        return {"error": "note_id is required"}
+    try:
+        from services.hitl_vault import HITLVault
+        vault = HITLVault()
+        result = vault.approve(note_id, decided_by="agent", reason=reason)
+        return result
+    except Exception as e:
+        log.warning("vault_approve failed: %s", e)
+        return {"error": str(e)}
+
+
+def _tool_vault_deny_adv(args: dict) -> dict:
+    note_id = args.get("note_id", "")
+    reason = args.get("reason", "")
+    if not note_id:
+        return {"error": "note_id is required"}
+    try:
+        from services.hitl_vault import HITLVault
+        vault = HITLVault()
+        result = vault.deny(note_id, decided_by="agent", reason=reason)
+        return result
+    except Exception as e:
+        log.warning("vault_deny failed: %s", e)
+        return {"error": str(e)}
+
+
+def _tool_vault_stats_adv(args: dict) -> dict:
+    try:
+        from services.hitl_vault import HITLVault
+        vault = HITLVault()
+        return vault.stats()
+    except Exception as e:
+        log.warning("vault_stats failed: %s", e)
+        return {"error": str(e)}
+
+
+# ── Goals tool implementations ─────────────────────────────────────
+
+def _tool_goal_create_adv(args: dict) -> dict:
+    try:
+        from services.goals import get_db
+        db = get_db()
+        labels = [l.strip() for l in args.get("labels", "").split(",") if l.strip()] if args.get("labels") else None
+        goal = db.goal_create(
+            title=args.get("title", ""),
+            description=args.get("description", ""),
+            priority=args.get("priority", "medium"),
+            owner=args.get("owner", ""),
+            target_date=args.get("target_date", ""),
+            labels=labels,
+        )
+        return {"status": "created", "goal": goal.to_dict()}
+    except Exception as e:
+        log.warning("goal_create failed: %s", e)
+        return {"error": str(e)}
+
+
+def _tool_goal_list_adv(args: dict) -> dict:
+    try:
+        from services.goals import get_db
+        db = get_db()
+        goals = db.goal_list(status=args.get("status") or None, owner=args.get("owner") or None)
+        return {"count": len(goals), "goals": [g.to_dict() for g in goals]}
+    except Exception as e:
+        log.warning("goal_list failed: %s", e)
+        return {"error": str(e), "goals": []}
+
+
+def _tool_goal_update_adv(args: dict) -> dict:
+    gid = args.get("goal_id", "")
+    if not gid:
+        return {"error": "goal_id is required"}
+    try:
+        from services.goals import get_db
+        db = get_db()
+        goal = db.goal_update(gid, title=args.get("title"), description=args.get("description"),
+                              status=args.get("status"), priority=args.get("priority"),
+                              owner=args.get("owner"), target_date=args.get("target_date"))
+        if not goal:
+            return {"error": f"goal {gid} not found"}
+        return {"status": "updated", "goal": goal.to_dict()}
+    except Exception as e:
+        log.warning("goal_update failed: %s", e)
+        return {"error": str(e)}
+
+
+def _tool_mission_create_adv(args: dict) -> dict:
+    try:
+        from services.goals import get_db
+        db = get_db()
+        teams = [t.strip() for t in args.get("teams", "").split(",") if t.strip()] if args.get("teams") else None
+        mission = db.mission_create(
+            goal_id=args.get("goal_id", ""),
+            title=args.get("title", ""),
+            description=args.get("description", ""),
+            lead=args.get("lead", ""),
+            target_date=args.get("target_date", ""),
+            teams=teams,
+        )
+        if not mission:
+            return {"error": f"goal {args.get('goal_id')} not found"}
+        return {"status": "created", "mission": mission.to_dict()}
+    except Exception as e:
+        log.warning("mission_create failed: %s", e)
+        return {"error": str(e)}
+
+
+def _tool_mission_list_adv(args: dict) -> dict:
+    try:
+        from services.goals import get_db
+        db = get_db()
+        missions = db.mission_list(goal_id=args.get("goal_id") or None, status=args.get("status") or None)
+        return {"count": len(missions), "missions": [m.to_dict() for m in missions]}
+    except Exception as e:
+        log.warning("mission_list failed: %s", e)
+        return {"error": str(e), "missions": []}
+
+
+def _tool_task_create_adv(args: dict) -> dict:
+    try:
+        from services.goals import get_db
+        db = get_db()
+        depends = [d.strip() for d in args.get("depends_on", "").split(",") if d.strip()] if args.get("depends_on") else None
+        task = db.task_create(
+            mission_id=args.get("mission_id", ""),
+            title=args.get("title", ""),
+            description=args.get("description", ""),
+            priority=args.get("priority", "medium"),
+            assignee=args.get("assignee", ""),
+            depends_on=depends,
+        )
+        if not task:
+            return {"error": f"mission {args.get('mission_id')} not found"}
+        return {"status": "created", "task": task.to_dict()}
+    except Exception as e:
+        log.warning("task_create failed: %s", e)
+        return {"error": str(e)}
+
+
+def _tool_task_list_adv(args: dict) -> dict:
+    try:
+        from services.goals import get_db
+        db = get_db()
+        tasks = db.task_list(mission_id=args.get("mission_id") or None,
+                             status=args.get("status") or None,
+                             assignee=args.get("assignee") or None)
+        return {"count": len(tasks), "tasks": [t.to_dict() for t in tasks]}
+    except Exception as e:
+        log.warning("task_list failed: %s", e)
+        return {"error": str(e), "tasks": []}
+
+
+def _tool_task_complete_adv(args: dict) -> dict:
+    tid = args.get("task_id", "")
+    if not tid:
+        return {"error": "task_id is required"}
+    try:
+        from services.goals import get_db
+        db = get_db()
+        task = db.task_update(tid, status="done")
+        if not task:
+            return {"error": f"task {tid} not found"}
+        return {"status": "completed", "task": task.to_dict()}
+    except Exception as e:
+        log.warning("task_complete failed: %s", e)
+        return {"error": str(e)}
+
+
+def _tool_preference_query_adv(args: dict) -> dict:
+    key = args.get("key", "")
+    if not key:
+        return {"error": "key is required", "preferences": []}
+    try:
+        mgr = get_memory_manager()
+        results = mgr.search_sync(key, mem_type=MemoryType.PREFERENCE, limit=20)
+        prefs = []
+        for m in results:
+            meta = m.metadata or {}
+            prefs.append({
+                "key": meta.get("key", ""),
+                "value": meta.get("value", ""),
+                "context": meta.get("context", ""),
+                "content": m.content[:300],
+                "created_at": m.created_at,
+                "importance": m.importance,
+            })
+        return {"key": key, "preferences": prefs, "count": len(prefs)}
+    except Exception as e:
+        log.warning("preference_query failed: %s", e)
+        return {"key": key, "preferences": [], "error": str(e)}
+
+
+def _parse_natural_cron(text: str) -> str:
+    t = text.lower().strip()
+    mappings = {
+        "every minute": "* * * * *", "every hour": "0 * * * *",
+        "every 2 hours": "0 */2 * * *", "every 3 hours": "0 */3 * * *",
+        "every 6 hours": "0 */6 * * *", "every 12 hours": "0 */12 * * *",
+        "every day": "0 0 * * *", "daily": "0 0 * * *",
+        "every weekday": "0 0 * * 1-5", "every week": "0 0 * * 0",
+        "weekly": "0 0 * * 0", "every month": "0 0 1 * *", "monthly": "0 0 1 * *",
+    }
+    if t in mappings:
+        return mappings[t]
+    import re
+    m = re.search(r"every (\d+) minutes?", t)
+    if m: return f"*/{m.group(1)} * * * *"
+    m = re.search(r"every (\d+) hours?", t)
+    if m: return f"0 */{m.group(1)} * * *"
+    m = re.search(r"every (\d+) days?", t)
+    if m: return f"0 0 */{m.group(1)} * *"
+    m = re.search(r"(?:every )?day at (\d+)(?::(\d+))?\s*([ap]m)?|at (\d+)(?::(\d+))?\s*([ap]m)?", t)
+    if m:
+        hour = int(m.group(1) or m.group(4))
+        minute = int(m.group(2) or m.group(5) or 0)
+        ampm = (m.group(3) or m.group(6) or "").lower()
+        if ampm == "pm" and hour < 12: hour += 12
+        if ampm == "am" and hour == 12: hour = 0
+        return f"{minute} {hour} * * *"
+    return t
+
+
+def _tool_create_schedule_adv(args: dict) -> dict:
+    description = args.get("description", "")
+    agent = args.get("agent", "")
+    action = args.get("action", "")
+    schedule = args.get("schedule", "")
+    if not all([description, agent, action, schedule]):
+        return {"error": "description, agent, action, and schedule are required"}
+    try:
+        from services.webhooks import schedule_add
+        cron_expr = _parse_natural_cron(schedule)
+        sched_id = schedule_add(cron_expr, agent, action, description=description)
+        return {"status": "created", "id": sched_id, "cron": cron_expr, "agent": agent, "action": action}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def _tool_list_schedules_adv(args: dict) -> dict:
+    try:
+        from services.webhooks import schedule_list
+        rows = schedule_list()
+        schedules = [{"id": r["id"], "cron": r["cron_expr"], "agent": r["agent"],
+                      "action": r["action"], "description": r.get("description", ""),
+                      "enabled": r.get("enabled", 1), "next_run": r.get("next_run", "")}
+                     for r in rows]
+        return {"count": len(schedules), "schedules": schedules}
+    except Exception as e:
+        return {"error": str(e), "schedules": []}
+
+
+def _tool_remove_schedule_adv(args: dict) -> dict:
+    sched_id = args.get("schedule_id", "")
+    if not sched_id:
+        return {"error": "schedule_id is required"}
+    try:
+        from services.webhooks import schedule_remove
+        removed = schedule_remove(sched_id)
+        return {"status": "removed" if removed else "not_found", "id": sched_id}
+    except Exception as e:
+        return {"error": str(e)}
 
 
 def _check_path(path: str, operation: str = "read") -> bool:

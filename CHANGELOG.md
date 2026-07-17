@@ -2,6 +2,29 @@
 
 All notable changes to **Starship OS**.
 
+## [2.2.0] — 2026-07-17
+
+### Added
+- **Dual-Brain Memory Stack (Phase 1A)** — Agent-specific `memory/<agent>/MEMORY.md` + `USER.md` files for romi/ergo/proxy with frozen system prompt injection. `TEMPORAL`, `KNOWLEDGE_GRAPH`, `PREFERENCE` memory types added to both LanceDB memory services. 7 memory tools: `memory_note`, `user_profile`, `archive_search`, `temporal_graph`, `temporal_chain`, `kg_query`, `kg_store`.
+- **FTS5 Session Archive (Phase 1B)** — `services/archive.py` with SQLite + FTS5 full-text search, `write()`/`search()`/`stats()` + CLI mode. Archive write hooks in both daemons (fires after each command). `archive_search` tool uses `ArchiveService` with JSONL fallback.
+- **Cron Scheduler (Phase 1C)** — `create_schedule`, `list_schedules`, `remove_schedule` tools with natural-language cron parser (`every hour`, `daily at 9am`, `every 30 minutes`) in both tool files. Reuses existing `services/webhooks.py` scheduler backend.
+- **Parallel Delegation (Phase 1D)** — `delegate` tool on primary daemon for fan-out parallel execution via `asyncio.gather`. Advanced daemon already had `spawn_subagent`/`list_subagents`/`kill_subagent` with `SubAgentManager` and LanceDB registry.
+
+- **Knowledge Graph Integration (Phase 2A)** — `kg_store` and `kg_query` tools in both daemons now backed by real storage: LanceDB (`src/python/services/memory.py`) for advanced daemon, SQLite (`services/memory.py`) for primary daemon. Triples stored as structured metadata (subject/predicate/object) with semantic search retrieval.
+- **Preference Memory (Phase 2B)** — `preference_note` and `preference_query` tools in both daemons. User preferences stored as key-value pairs with context, using PREFERENCE memory type. Retrievable by key across sessions.
+- **Temporal Graph Chain (Phase 2C)** — `temporal_graph`, `temporal_chain`, `temporal_snapshot` tools in both daemons. State transitions recorded via `services/audit.py` (existing audit trail with `before_state`/`after_state` columns). `temporal_snapshot` writes new transitions; `temporal_graph` queries by entity; `temporal_chain` reconstructs full action chains via `parent_action_id` linked-list traversal.
+- **Obsidian HITL Vault (Phase 2D)** — `services/hitl_vault.py` bridges the HITL approval system to a markdown vault directory compatible with Obsidian. 6 vault tools: `vault_sync` (sync hitl.db → markdown), `vault_list`, `vault_note` (ad-hoc markdown notes with frontmatter), `vault_approve`, `vault_deny`, `vault_stats`. Vault directory defaults to `memory/vault/`.
+- **Goals → Missions → Tasks System** — Full three-layer strategic planning hierarchy. `services/goals.py` with SQLite persistence, status lifecycle, health computation (on_track/at_risk/off_track), and audit integration. Dashboard "Goals" widget with expandable goal/mission/task tree, horizontal progress bars, health indicators, and Chart.js timeline bar chart. 9 agent tools: `goal_create`, `goal_list`, `goal_update`, `mission_create`, `mission_list`, `task_create`, `task_list`, `task_complete`. REST API: 14 endpoints for Goal/Mission/Task CRUD + health recompute. Integrates with `services/audit.py` (temporal snapshots), `services/memory.py` (KNOWLEDGE_GRAPH task dependency triples), `services/hitl.py` (goal status approval gates), `services/archive.py` (goal completion snapshots), `services/webhooks.py` (scheduled health checks).
+
+### Changed
+- `memory/romi/MEMORY.md`, `memory/romi/USER.md`, `memory/ergo/MEMORY.md`, `memory/ergo/USER.md`, `memory/proxy/MEMORY.md`, `memory/proxy/USER.md` — created as stubs
+- `services/memory.py` — `MemoryType` enum extended with `TEMPORAL`, `KNOWLEDGE_GRAPH`, `PREFERENCE`
+- `src/python/services/memory.py` — same enum extension
+- `agents/tools.py` — 7 memory tools + 3 schedule tools + `delegate` parallel tool + KG wired to SQLite storage added
+- `src/python/lib/tools.py` — 7 memory tools + 3 schedule tools + KG wired to LanceDB storage added
+- `agents/agent_daemon.py` — memory context injection + archive write hook added
+- `src/python/lib/agent_daemon.py` — memory context injection + archive write hook added
+
 ## [2.1.0] — 2026-07-15
 
 ### Added

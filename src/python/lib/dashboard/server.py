@@ -19,6 +19,12 @@ NATS_URL = os.getenv("NATS_URL", "nats://127.0.0.1:4222")
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434")
 PORT = int(os.getenv("DASHBOARD_PORT", os.getenv("AGNETIC_DASHBOARD_PORT", "8788")))
 STATUS_FILE = Path("/tmp/agnetic-status.json")
+
+try:
+    from services.goals import get_db
+    _goals_db = get_db()
+except Exception:
+    _goals_db = None
 GPU_STATE = Path(os.getenv("STARSHIP_GPU_STATE", "/tmp/starship-gpu-state.json"))
 if not GPU_STATE.exists():
     _legacy_gpu = Path("/tmp/agnetic-gpu-state.json")
@@ -288,6 +294,13 @@ async def handle_api_dashboard(request):
             }
 
     nats_ok = bool(nc and nc.is_connected)
+    goals_summary = {}
+    if _goals_db:
+        try:
+            goals_summary = _goals_db.dashboard()
+        except Exception:
+            goals_summary = {"goals": [], "total_goals": 0, "active_goals": 0, "completed_goals": 0}
+
     return web.json_response({
         "agents": agents,
         "telemetry": telemetry,
@@ -298,6 +311,7 @@ async def handle_api_dashboard(request):
             "models": [{"name": m.get("name", ""), "size": m.get("size", 0)} for m in ollama_models],
         },
         "nats": {"url": NATS_URL, "connected": nats_ok},
+        "goals": goals_summary,
         "timestamp": datetime.now().isoformat(),
     })
 
@@ -873,6 +887,168 @@ async def handle_no_data(request):
     return web.json_response({"status": "no_data", "data": [], "message": "No active data"})
 
 
+# ── Goals API ────────────────────────────────────────────────────────
+
+async def handle_api_goals(request):
+    if _goals_db is None:
+        return web.json_response({"error": "goals service not available"}, status=503)
+    return web.json_response(_goals_db.dashboard())
+
+
+async def handle_api_goal_get(request):
+    gid = request.match_info.get("id", "")
+    if _goals_db is None:
+        return web.json_response({"error": "goals service not available"}, status=503)
+    goal = _goals_db.goal_get(gid)
+    if not goal:
+        return web.json_response({"error": "goal not found"}, status=404)
+    gd = goal.to_dict()
+    gd["missions"] = [m.to_dict() for m in _goals_db.mission_list(goal_id=gid)]
+    for m in gd["missions"]:
+        m["tasks"] = [t.to_dict() for t in _goals_db.task_list(mission_id=m["id"])]
+    return web.json_response(gd)
+
+
+async def handle_api_goal_create(request):
+    if _goals_db is None:
+        return web.json_response({"error": "goals service not available"}, status=503)
+    body = await request.json()
+    goal = _goals_db.goal_create(
+        title=body.get("title", ""),
+        description=body.get("description", ""),
+        priority=body.get("priority", "medium"),
+        owner=body.get("owner", ""),
+        target_date=body.get("target_date", ""),
+        labels=body.get("labels"),
+        resources=body.get("resources"),
+    )
+    return web.json_response(goal.to_dict() if goal else {"error": "create failed"}, status=201)
+
+
+async def handle_api_goal_update(request):
+    gid = request.match_info.get("id", "")
+    if _goals_db is None:
+        return web.json_response({"error": "goals service not available"}, status=503)
+    body = await request.json()
+    goal = _goals_db.goal_update(gid, **body)
+    if not goal:
+        return web.json_response({"error": "goal not found"}, status=404)
+    return web.json_response(goal.to_dict())
+
+
+async def handle_api_goal_delete(request):
+    gid = request.match_info.get("id", "")
+    if _goals_db is None:
+        return web.json_response({"error": "goals service not available"}, status=503)
+    ok = _goals_db.goal_delete(gid)
+    return web.json_response({"deleted": ok})
+
+
+async def handle_api_goal_health(request):
+    gid = request.match_info.get("id", "")
+    if _goals_db is None:
+        return web.json_response({"error": "goals service not available"}, status=503)
+    goal = _goals_db.recompute_goal_health(gid)
+    if not goal:
+        return web.json_response({"error": "goal not found"}, status=404)
+    return web.json_response({"health": goal.health, "progress": goal.progress})
+
+
+async def handle_api_missions(request):
+    if _goals_db is None:
+        return web.json_response({"error": "goals service not available"}, status=503)
+    goal_id = request.query.get("goal_id", "")
+    status = request.query.get("status", "")
+    missions = _goals_db.mission_list(goal_id=goal_id or None, status=status or None)
+    return web.json_response({"missions": [m.to_dict() for m in missions]})
+
+
+async def handle_api_mission_create(request):
+    if _goals_db is None:
+        return web.json_response({"error": "goals service not available"}, status=503)
+    body = await request.json()
+    mission = _goals_db.mission_create(
+        goal_id=body.get("goal_id", ""),
+        title=body.get("title", ""),
+        description=body.get("description", ""),
+        lead=body.get("lead", ""),
+        target_date=body.get("target_date", ""),
+        teams=body.get("teams"),
+    )
+    if not mission:
+        return web.json_response({"error": "goal not found"}, status=404)
+    return web.json_response(mission.to_dict(), status=201)
+
+
+async def handle_api_mission_update(request):
+    mid = request.match_info.get("id", "")
+    if _goals_db is None:
+        return web.json_response({"error": "goals service not available"}, status=503)
+    body = await request.json()
+    mission = _goals_db.mission_update(mid, **body)
+    if not mission:
+        return web.json_response({"error": "mission not found"}, status=404)
+    return web.json_response(mission.to_dict())
+
+
+async def handle_api_mission_delete(request):
+    mid = request.match_info.get("id", "")
+    if _goals_db is None:
+        return web.json_response({"error": "goals service not available"}, status=503)
+    ok = _goals_db.mission_delete(mid)
+    return web.json_response({"deleted": ok})
+
+
+async def handle_api_tasks(request):
+    if _goals_db is None:
+        return web.json_response({"error": "goals service not available"}, status=503)
+    mission_id = request.query.get("mission_id", "")
+    status = request.query.get("status", "")
+    assignee = request.query.get("assignee", "")
+    tasks = _goals_db.task_list(
+        mission_id=mission_id or None,
+        status=status or None,
+        assignee=assignee or None,
+    )
+    return web.json_response({"tasks": [t.to_dict() for t in tasks]})
+
+
+async def handle_api_task_create(request):
+    if _goals_db is None:
+        return web.json_response({"error": "goals service not available"}, status=503)
+    body = await request.json()
+    task = _goals_db.task_create(
+        mission_id=body.get("mission_id", ""),
+        title=body.get("title", ""),
+        description=body.get("description", ""),
+        priority=body.get("priority", "medium"),
+        assignee=body.get("assignee", ""),
+        depends_on=body.get("depends_on"),
+    )
+    if not task:
+        return web.json_response({"error": "mission not found"}, status=404)
+    return web.json_response(task.to_dict(), status=201)
+
+
+async def handle_api_task_update(request):
+    tid = request.match_info.get("id", "")
+    if _goals_db is None:
+        return web.json_response({"error": "goals service not available"}, status=503)
+    body = await request.json()
+    task = _goals_db.task_update(tid, **body)
+    if not task:
+        return web.json_response({"error": "task not found"}, status=404)
+    return web.json_response(task.to_dict())
+
+
+async def handle_api_task_delete(request):
+    tid = request.match_info.get("id", "")
+    if _goals_db is None:
+        return web.json_response({"error": "goals service not available"}, status=503)
+    ok = _goals_db.task_delete(tid)
+    return web.json_response({"deleted": ok})
+
+
 async def handle_incidents(request):
     return web.json_response({"incidents": [], "status": "no_data", "message": "No active incidents"})
 
@@ -909,6 +1085,20 @@ app.router.add_get("/api/fleet", handle_api_fleet)
 app.router.add_get("/api/fleet/plants", handle_api_fleet_plants)
 app.router.add_post("/api/fleet/exercise", handle_api_fleet_exercise)
 app.router.add_post("/api/fleet/register", handle_api_fleet_register)
+app.router.add_get("/api/goals", handle_api_goals)
+app.router.add_get("/api/goals/{id}", handle_api_goal_get)
+app.router.add_post("/api/goals", handle_api_goal_create)
+app.router.add_put("/api/goals/{id}", handle_api_goal_update)
+app.router.add_delete("/api/goals/{id}", handle_api_goal_delete)
+app.router.add_post("/api/goals/{id}/recompute", handle_api_goal_health)
+app.router.add_get("/api/missions", handle_api_missions)
+app.router.add_post("/api/missions", handle_api_mission_create)
+app.router.add_put("/api/missions/{id}", handle_api_mission_update)
+app.router.add_delete("/api/missions/{id}", handle_api_mission_delete)
+app.router.add_get("/api/tasks", handle_api_tasks)
+app.router.add_post("/api/tasks", handle_api_task_create)
+app.router.add_put("/api/tasks/{id}", handle_api_task_update)
+app.router.add_delete("/api/tasks/{id}", handle_api_task_delete)
 app.router.add_get("/api/incidents", handle_incidents)
 app.router.add_get("/api/policy", handle_no_data)
 app.router.add_get("/api/memory", handle_no_data)

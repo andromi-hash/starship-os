@@ -269,6 +269,7 @@ async def _consume_msgs(sub, handler):
 
 SKILLS_DIR = _PROJECT_ROOT / "skills"
 SOULS_DIR = _PROJECT_ROOT / "souls"
+MEMORY_DIR = _PROJECT_ROOT / "memory"
 
 
 def load_skill_content(skill_names):
@@ -296,6 +297,30 @@ def load_soul(agent_name):
         except Exception as e:
             log.warning("Failed to load soul for '%s': %s", agent_name, e)
     log.info("No soul file found for '%s', using generic personality", agent_name)
+    return None
+
+
+def load_memory_files(agent_name):
+    """Load the MEMORY.md and USER.md files as a frozen snapshot."""
+    memory_path = MEMORY_DIR / agent_name / "MEMORY.md"
+    user_path = MEMORY_DIR / agent_name / "USER.md"
+    parts = []
+    if memory_path.exists():
+        try:
+            content = memory_path.read_text().strip()
+            if content:
+                parts.append(f"=== Agent Notes ===\n{content}")
+        except Exception as e:
+            log.warning("Failed to load MEMORY.md for '%s': %s", agent_name, e)
+    if user_path.exists():
+        try:
+            content = user_path.read_text().strip()
+            if content:
+                parts.append(f"=== User Profile (frozen at session start) ===\n{content}")
+        except Exception as e:
+            log.warning("Failed to load USER.md for '%s': %s", agent_name, e)
+    if parts:
+        return "\n\n".join(parts)
     return None
 
 
@@ -452,6 +477,9 @@ async def process_command(agent_name, config, subject, payload, telemetry=None, 
     skill_context = load_skill_content(skills)
     skill_block = f"\n\n## Active Skills\n{skill_context}" if skill_context else ""
     
+    memory_files_ctx = load_memory_files(agent_name)
+    memory_files_block = f"\n\n## Persistent Memory (frozen at session start)\n{memory_files_ctx}" if memory_files_ctx else ""
+
     context_ctx = ""
     try:
         from services.context_loader import load_context
@@ -464,6 +492,7 @@ async def process_command(agent_name, config, subject, payload, telemetry=None, 
         f"\n\n## Operational Context\n"
         f"You are connected via the Starship OS NATS agent bus.\n"
         f"{telemetry_context}{memory_context}"
+        f"{memory_files_block}"
         f"{context_block}"
         f"Current timestamp: {datetime.now().isoformat()}"
     )
@@ -526,6 +555,14 @@ async def process_command(agent_name, config, subject, payload, telemetry=None, 
             )
         except Exception:
             pass
+
+    try:
+        from services.archive import ArchiveService
+        arch = ArchiveService()
+        arch.write(agent=agent_name, command=command, response=response[:5000])
+        arch.close()
+    except Exception:
+        pass
 
     stall_phrases = ["stuck", "can't", "failing", "hard problem", "debug loop", "no idea", "repeat"]
     if any(p in (command + " " + response).lower() for p in stall_phrases):

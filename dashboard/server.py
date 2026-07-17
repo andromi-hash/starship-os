@@ -1260,47 +1260,6 @@ def _skill_security_score(skill, category):
 
 
 async def handle_skills_marketplace(request):
-    """Return available skill libraries and search results."""
-    query = request.query.get("q", "").strip().lower()
-    source = request.query.get("source", "").strip()
-
-    SKILL_SOURCES = [
-        {"id": "anthropics/skills", "owner": "anthropics", "repo": "skills", "label": "Anthropic", "description": "Official Anthropic skill library for Claude AI agents", "protocol": "SKILL.md (YAML frontmatter)", "url": "https://github.com/anthropics/skills"},
-        {"id": "vercel-labs/agent-skills", "owner": "vercel-labs", "repo": "agent-skills", "label": "Vercel", "description": "Vercel agent skills for deployment, analytics, and cloud functions", "protocol": "SKILL.md", "url": "https://github.com/vercel-labs/agent-skills"},
-        {"id": "vercel-labs/skills", "owner": "vercel-labs", "repo": "skills", "label": "Vercel Labs", "description": "General-purpose skill library from Vercel Labs", "protocol": "SKILL.md", "url": "https://github.com/vercel-labs/skills"},
-        {"id": "mattpocock/skills", "owner": "mattpocock", "repo": "skills", "label": "Matt Pocock", "description": "TypeScript-focused skills and developer tools", "protocol": "SKILL.md", "url": "https://github.com/mattpocock/skills"},
-        {"id": "microsoft/azure-skills", "owner": "microsoft", "repo": "azure-skills", "label": "Microsoft Azure", "description": "Azure cloud skills for infrastructure management", "protocol": "SKILL.md", "url": "https://github.com/microsoft/azure-skills"},
-        {"id": "firebase/agent-skills", "owner": "firebase", "repo": "agent-skills", "label": "Firebase", "description": "Firebase integration skills for auth, database, and hosting", "protocol": "SKILL.md", "url": "https://github.com/firebase/agent-skills"},
-        {"id": "supabase/agent-skills", "owner": "supabase", "repo": "agent-skills", "label": "Supabase", "description": "Supabase integration skills for PostgreSQL and auth", "protocol": "SKILL.md", "url": "https://github.com/supabase/agent-skills"},
-        {"id": "sentry-devtools/skills", "owner": "sentry-devtools", "repo": "skills", "label": "Sentry", "description": "Error tracking and performance monitoring skills", "protocol": "SKILL.md", "url": "https://github.com/sentry-devtools/skills"},
-        {"id": "shadcn/ui", "owner": "shadcn", "repo": "ui", "label": "shadcn/ui", "description": "UI component library skills for design systems", "protocol": "SKILL.md", "url": "https://github.com/shadcn/ui"},
-        {"id": "scrapegraphai/just-scrape", "owner": "scrapegraphai", "repo": "just-scrape", "label": "ScrapeGraphAI", "description": "Web scraping and data extraction skills", "protocol": "SKILL.md", "url": "https://github.com/scrapegraphai/just-scrape"},
-        {"id": "heygen-com/hyperframes", "owner": "heygen-com", "repo": "hyperframes", "label": "HeyGen", "description": "Video generation and avatar skills", "protocol": "SKILL.md", "url": "https://github.com/heygen-com/hyperframes"},
-        {"id": "remotion-dev/skills", "owner": "remotion-dev", "repo": "skills", "label": "Remotion", "description": "Programmatic video rendering skills", "protocol": "SKILL.md", "url": "https://github.com/remotion-dev/skills"},
-    ]
-
-    if not query and not source:
-        return web.json_response({
-            "sources": SKILL_SOURCES,
-            "total_sources": len(SKILL_SOURCES),
-            "protocol": "SKILL.md with YAML frontmatter (name, description, version, license, tags, category, allowed-tools)",
-            "description": "Starship OS skills are SKILL.md files with YAML frontmatter defining agent capabilities. Skills can be discovered from community repos and installed via the marketplace.",
-        })
-
-    # Filter sources if specified
-    sources = [s for s in SKILL_SOURCES] if not source else [s for s in SKILL_SOURCES if s["id"] == source]
-    if not sources:
-        return web.json_response({"skills": [], "total": 0, "error": f"Unknown source: {source}"})
-
-    # Search via GitHub API
-    all_skills = []
-    for src in sources:
-        try:
-            import aiohttp as _aiohttp
-            url = f"https://api.github.com/repos/{src['owner']}/{src['repo']}/contents/"
-            async with _aiohttp.ClientSession() as session:
-                async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
-                    if resp.status == 200:
                         items = await resp.json()
                         for item in items:
                             if item.get("type") == "dir":

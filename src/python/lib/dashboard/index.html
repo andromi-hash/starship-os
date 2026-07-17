@@ -6,6 +6,7 @@
 <title>Starship OS</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -395,6 +396,35 @@ body::before{
   .ship-name{font-size:0.85rem}
   #widget-grid{padding:6px;gap:6px}
 }
+.goal-header{display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--surface);border-radius:6px;margin:4px 0;cursor:pointer;border:1px solid var(--edge)}
+.goal-header:hover{border-color:var(--primary)}
+.goal-title{font-size:0.7rem;font-weight:600;flex:1}
+.goal-owner{font-size:0.6rem;color:var(--accent)}
+.goal-health{font-size:0.55rem;padding:2px 6px;border-radius:4px;font-weight:600}
+.health-on_track{background:rgba(123,200,164,.2);color:var(--success)}
+.health-at_risk{background:rgba(212,160,96,.2);color:var(--warning)}
+.health-off_track{background:rgba(212,96,96,.2);color:var(--alert)}
+.health-none{background:rgba(90,106,128,.2);color:var(--muted)}
+.goal-progress{width:60px;height:4px;background:var(--edge);border-radius:2px;overflow:hidden}
+.goal-progress-fill{height:100%;border-radius:2px;transition:width .3s}
+.goal-progress-fill.good{background:var(--success)}
+.goal-progress-fill.warn{background:var(--warning)}
+.goal-progress-fill.bad{background:var(--alert)}
+.goal-status{font-size:0.55rem;padding:1px 5px;border-radius:3px;background:var(--edge);color:var(--dim)}
+.goal-detail{display:none;padding:6px 8px 8px 24px;border-left:2px solid var(--edge);margin:0 0 4px 8px}
+.goal-detail.open{display:block}
+.mission-item{padding:4px 6px;margin:3px 0;background:rgba(14,22,40,.4);border-radius:4px;font-size:0.6rem}
+.mission-title{font-weight:500;color:var(--text)}
+.mission-lead{color:var(--accent);font-size:0.55rem}
+.mission-meta{display:flex;gap:8px;align-items:center;margin-top:2px}
+.progress-label{font-size:0.5rem;color:var(--dim)}
+.task-table{width:100%;font-size:0.55rem;border-collapse:collapse;margin-top:4px}
+.task-table th{text-align:left;color:var(--muted);font-weight:500;padding:2px 4px;border-bottom:1px solid var(--edge)}
+.task-table td{padding:2px 4px;border-bottom:1px solid rgba(60,80,120,.08)}
+.task-status-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:4px}
+.task-priority-high{color:var(--alert)}
+.task-priority-medium{color:var(--warning)}
+.task-priority-low{color:var(--dim)}
 </style>
 </head>
 <body>
@@ -447,6 +477,7 @@ const WIDGETS = [
   {id:'history',    title:'Message History',     wide:false, render:renderHistory},
   {id:'comms',      title:'Crew Comms',          wide:false, render:renderComms},
   {id:'backlog',    title:'Backlog',             wide:true,  render:renderBacklog},
+  {id:'goals',      title:'Goals',               wide:true,  render:renderGoals},
   {id:'governance', title:'Governance',          wide:false, render:renderGovernance},
   {id:'fleet',      title:'Flamingo Fleet',       wide:false, render:renderFleet},
   {id:'subagents',  title:'Sub-Agents',          wide:false, render:renderSubagents},
@@ -938,6 +969,105 @@ function renderBacklog(body, data) {
   }
   html += '</div>';
   body.innerHTML = html;
+}
+
+let _goalsChart = null;
+
+function renderGoals(body, data) {
+  if (!data) { body.innerHTML = '<div style="color:var(--muted);font-size:0.7rem;padding:4px">Loading...</div>'; return; }
+  const gd = data.goals || {};
+  const goals = gd.goals || [];
+  if (goals.length === 0) { body.innerHTML = '<div style="color:var(--muted);font-size:0.7rem;padding:4px">No goals yet. Ask an agent to create one.</div>'; return; }
+
+  let html = '<div style="margin-bottom:6px;display:flex;gap:12px;font-size:0.6rem;color:var(--dim)">';
+  html += `<span>Total: <strong style="color:var(--text)">${gd.total_goals||0}</strong></span>`;
+  html += `<span>Active: <strong style="color:var(--success)">${gd.active_goals||0}</strong></span>`;
+  html += `<span>Completed: <strong style="color:var(--muted)">${gd.completed_goals||0}</strong></span>`;
+  html += '</div>';
+
+  for (const g of goals) {
+    const healthClass = g.health === 'on_track' ? 'health-on_track' : (g.health === 'at_risk' ? 'health-at_risk' : (g.health === 'off_track' ? 'health-off_track' : 'health-none'));
+    const progClass = g.progress >= 70 ? 'good' : (g.progress >= 30 ? 'warn' : 'bad');
+    const statusLabel = g.status.replace('_', ' ');
+    html += `<div class="goal-header" onclick="toggleGoalDetail('${escapeHTML(g.id)}')">`;
+    html += `<span class="goal-status">${escapeHTML(statusLabel)}</span>`;
+    html += `<span class="goal-title">${escapeHTML(g.title)}</span>`;
+    if (g.owner) html += `<span class="goal-owner">@${escapeHTML(g.owner)}</span>`;
+    html += `<div class="goal-progress"><div class="goal-progress-fill ${progClass}" style="width:${g.progress}%"></div></div>`;
+    html += `<span class="progress-label">${g.progress}%</span>`;
+    html += `<span class="goal-health ${healthClass}">${escapeHTML(g.health.replace('_',' '))}</span>`;
+    html += '</div>';
+
+    html += `<div class="goal-detail" id="goal-detail-${escapeHTML(g.id)}">`;
+    if (g.target_date) html += `<div style="font-size:0.55rem;color:var(--dim);margin-bottom:4px">Target: ${escapeHTML(g.target_date)}</div>`;
+
+    const missions = g.missions || [];
+    for (const m of missions) {
+      const mhClass = m.health === 'on_track' ? 'health-on_track' : (m.health === 'at_risk' ? 'health-at_risk' : (m.health === 'off_track' ? 'health-off_track' : 'health-none'));
+      html += `<div class="mission-item">`;
+      html += `<div class="mission-title">${escapeHTML(m.title)}</div>`;
+      html += `<div class="mission-meta">`;
+      if (m.lead) html += `<span class="mission-lead">@${escapeHTML(m.lead)}</span>`;
+      html += `<span class="goal-health ${mhClass}" style="font-size:0.5rem">${escapeHTML(m.health.replace('_',' '))}</span>`;
+      html += `<span class="progress-label">${m.progress}%</span>`;
+      html += `<span class="goal-status">${escapeHTML(m.status.replace('_',' '))}</span>`;
+      if (m.target_date) html += `<span style="color:var(--dim)">${escapeHTML(m.target_date)}</span>`;
+      html += '</div>';
+
+      const tasks = m.tasks || [];
+      if (tasks.length > 0) {
+        html += '<table class="task-table"><tr><th></th><th>Task</th><th>Assignee</th><th>Priority</th></tr>';
+        for (const t of tasks) {
+          const dotColor = t.status === 'done' ? 'var(--success)' : (t.status === 'in_progress' ? 'var(--primary)' : (t.status === 'review' ? 'var(--warning)' : 'var(--muted)'));
+          const prioClass = t.priority === 'high' ? 'task-priority-high' : (t.priority === 'medium' ? 'task-priority-medium' : 'task-priority-low');
+          html += `<tr><td><span class="task-status-dot" style="background:${dotColor}"></span></td>`;
+          html += `<td>${escapeHTML(t.title)}</td>`;
+          html += `<td>${t.assignee ? '@'+escapeHTML(t.assignee) : '-'}</td>`;
+          html += `<td class="${prioClass}">${escapeHTML(t.priority)}</td></tr>`;
+        }
+        html += '</table>';
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+
+  // Append timeline chart canvas
+  html += '<div style="margin-top:8px;height:120px"><canvas id="goals-timeline-canvas"></canvas></div>';
+  body.innerHTML = html;
+
+  // Timeline chart
+  const canvas = document.getElementById('goals-timeline-canvas');
+  if (canvas && goals.length > 0) {
+    if (_goalsChart) _goalsChart.destroy();
+    _goalsChart = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: goals.map(g => g.title.substring(0, 20)),
+        datasets: [{
+          label: 'Progress %',
+          data: goals.map(g => g.progress),
+          backgroundColor: goals.map(g => g.progress >= 70 ? 'rgba(123,200,164,.7)' : (g.progress >= 30 ? 'rgba(212,160,96,.7)' : 'rgba(212,96,96,.7)')),
+          borderRadius: 4,
+        }],
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { max: 100, grid: { color: 'rgba(60,80,120,.1)' }, ticks: { color: '#5A6A80', font: { size: 9 } } },
+          y: { grid: { display: false }, ticks: { color: '#8A9BB0', font: { size: 8 } } },
+        },
+      },
+    });
+  }
+}
+
+function toggleGoalDetail(id) {
+  const el = document.getElementById('goal-detail-' + id);
+  if (el) el.classList.toggle('open');
 }
 
 function renderGovernance(body, data) {
