@@ -1,6 +1,6 @@
 agents:
   proxy:
-    model: qwen2.5:7b
+    model: rafw007/qwen35-claude-coder:9b
     nats_url: nats://127.0.0.1:4222
     nats_token: ""
     enabled: true
@@ -9,7 +9,7 @@ agents:
     schedule: []
 
   romi:
-    model: qwen2.5:7b
+    model: jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest
     nats_url: nats://127.0.0.1:4222
     nats_token: ""
     enabled: true
@@ -18,7 +18,7 @@ agents:
     schedule: []
 
   ergo:
-    model: jeffgreen311/eve-v2-unleashed-qwen3.5-8b-liberated-4k-4b-merged
+    model: qwen2.5:7b
     nats_url: nats://127.0.0.1:4222
     nats_token: ""
     enabled: true
