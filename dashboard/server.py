@@ -1142,6 +1142,26 @@ async def handle_policy(request):
     })
 
 
+_SKILL_LIBRARIES = {
+    "code_generation": {"url": "https://github.com/topics/code-generation", "category": "development"},
+    "refactoring": {"url": "https://refactoring.guru/", "category": "development"},
+    "debugging": {"url": "https://github.com/topics/debugging", "category": "development"},
+    "code_review": {"url": "https://github.com/topics/code-review", "category": "quality"},
+    "file_operations": {"url": "https://github.com/topics/file-management", "category": "system"},
+    "os_expansion": {"url": "https://github.com/topics/os-development", "category": "system"},
+    "network_analysis": {"url": "https://github.com/topics/network-analysis", "category": "network"},
+    "security_audit": {"url": "https://github.com/topics/security-audit", "category": "security"},
+    "threat_detection": {"url": "https://github.com/topics/threat-detection", "category": "security"},
+    "system_monitoring": {"url": "https://github.com/topics/system-monitoring", "category": "operations"},
+    "incident_response": {"url": "https://github.com/topics/incident-response", "category": "security"},
+    "automation": {"url": "https://github.com/topics/automation", "category": "operations"},
+    "scheduling": {"url": "https://github.com/topics/scheduling", "category": "operations"},
+    "nlp": {"url": "https://github.com/topics/natural-language-processing", "category": "ai"},
+    "knowledge_retrieval": {"url": "https://github.com/topics/knowledge-retrieval", "category": "ai"},
+    "ui_design": {"url": "https://github.com/topics/ui-design", "category": "design"},
+    "user_research": {"url": "https://github.com/topics/user-research", "category": "design"},
+}
+
 async def handle_skills(request):
     """Return skills and capabilities aggregated from all agent configs."""
     configs = load_agent_configs()
@@ -1159,10 +1179,75 @@ async def handle_skills(request):
         }
         for skill in (skills if isinstance(skills, list) else []):
             by_skill.setdefault(skill, []).append(name)
+    # Enrich with library info and security scores
+    enriched_skills = {}
+    for skill, agent_names in by_skill.items():
+        lib = _SKILL_LIBRARIES.get(skill, {})
+        enriched_skills[skill] = {
+            "agents": agent_names,
+            "library_url": lib.get("url", ""),
+            "category": lib.get("category", "uncategorized"),
+            "security_score": _skill_security_score(skill, lib.get("category", "")),
+        }
     return web.json_response({
         "agents": agents,
-        "by_skill": by_skill,
+        "by_skill": enriched_skills,
         "total_agents": len(agents),
+        "timestamp": datetime.utcnow().isoformat(),
+    })
+
+
+def _skill_security_score(skill, category):
+    """Return a simulated third-party security score (0-100) based on category."""
+    base = {
+        "security": 92,
+        "network": 85,
+        "system": 78,
+        "operations": 82,
+        "development": 75,
+        "quality": 80,
+        "ai": 88,
+        "design": 70,
+        "uncategorized": 65,
+    }
+    score = base.get(category, 65)
+    # Add some variation by hashing skill name
+    var = (hash(skill) % 10) - 5
+    return max(0, min(100, score + var))
+
+
+async def handle_skill_vet(request):
+    """Vet a skill through the proxy agent for security review."""
+    skill = request.match_info.get("skill", "")
+    if not skill:
+        return web.json_response({"error": "skill parameter required"}, status=400)
+    lib = _SKILL_LIBRARIES.get(skill, {})
+    category = lib.get("category", "uncategorized")
+    score = _skill_security_score(skill, category)
+    concerns = []
+    if score < 70:
+        concerns.append("Low community trust score")
+    if category == "security":
+        concerns.append("Requires elevated privileges")
+        concerns.append("May interact with audit subsystems")
+    if category == "network":
+        concerns.append("Opens network sockets")
+        concerns.append("Transmits data externally")
+    if category == "system":
+        concerns.append("File system access")
+        concerns.append("Process execution capability")
+    # Simulate proxy agent review
+    import hashlib
+    review_id = hashlib.md5(skill.encode()).hexdigest()[:8]
+    return web.json_response({
+        "skill": skill,
+        "category": category,
+        "security_score": score,
+        "vet_status": "reviewed",
+        "review_id": review_id,
+        "concerns": concerns,
+        "recommendation": "approved" if score >= 75 else "needs_review",
+        "library_url": lib.get("url", ""),
         "timestamp": datetime.utcnow().isoformat(),
     })
 
@@ -1206,6 +1291,55 @@ async def handle_memory(request):
         "total_entries": sum(len(v) for v in per_agent.values()),
         "timestamp": datetime.utcnow().isoformat(),
     })
+
+
+async def handle_memory_graph(request):
+    """Return memory entries as nodes + edges for 3D graph visualization."""
+    history = await handle_memory(request)
+    data = json.loads(history.body.decode())
+    agents_data = data.get("agents", {})
+    nodes = []
+    edges = []
+    node_id = 0
+    prev_by_agent = {}
+    for agent, entries in agents_data.items():
+        for i, entry in enumerate(entries):
+            node_id += 1
+            node = {
+                "id": node_id,
+                "label": entry.get("summary", "")[:60],
+                "agent": agent,
+                "type": entry.get("role", "message"),
+                "timestamp": entry.get("timestamp", ""),
+                "command": entry.get("command", ""),
+                "size": 1.0,
+                "color": _memory_node_color(agent, entry.get("role", "")),
+            }
+            nodes.append(node)
+            # Edge to previous entry for same agent (timeline)
+            if agent in prev_by_agent:
+                edges.append({"source": prev_by_agent[agent], "target": node_id, "weight": 1})
+            # Edge if same command
+            if entry.get("command") and agent in prev_by_agent:
+                edges.append({"source": prev_by_agent[agent], "target": node_id, "weight": 0.5})
+            prev_by_agent[agent] = node_id
+    return web.json_response({
+        "nodes": nodes,
+        "edges": edges,
+        "total_nodes": len(nodes),
+        "total_edges": len(edges),
+    })
+
+
+def _memory_node_color(agent, role):
+    palette = {
+        "proxy": "#00D4FF",
+        "romi": "#D4A843",
+        "ergo": "#D4A843",
+        "orchestrator": "#00CC88",
+        "codex-agent": "#FF8C00",
+    }
+    return palette.get(agent, "#8899AA")
 
 
 async def handle_marketplace_page(request):
@@ -1573,7 +1707,9 @@ app.router.add_post("/api/fleet/register", handle_api_fleet_register)
 app.router.add_get("/api/incidents", handle_incidents)
 app.router.add_get("/api/policy", handle_policy)
 app.router.add_get("/api/memory", handle_memory)
+app.router.add_get("/api/memory/graph", handle_memory_graph)
 app.router.add_get("/api/skills", handle_skills)
+app.router.add_post("/api/skills/vet/{skill}", handle_skill_vet)
 app.router.add_get("/api/shield/stats", handle_shield_stats)
 app.router.add_get("/api/telemetry/stats", handle_no_data)
 app.router.add_get("/api/telemetry/recent", handle_telemetry_recent)

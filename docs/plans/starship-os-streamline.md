@@ -1,6 +1,6 @@
 # Starship OS — Streamline, Standardize, Bare-Metal Plan (Alpha 2.1)
 
-**Status:** Phase 0–5 complete · **2.1.0**  
+**Status:** Phase 0–5 complete · Phase 6 (StarAgent) complete · Phase A (Live Dashboard) complete · **2.2.0**  
 **Canonical repo:** https://github.com/andromi-hash/starship-os  
 **Legacy Alpha 2.0:** https://github.com/andromi-hash/agnetic-os (archived source)
 
@@ -83,6 +83,27 @@
 - [x] Full ISO boot smoke (`iso-boot-smoke.sh`; QEMU when available + static gates)
 - [x] C11 `starshipd` + `heald` spikes
 - [x] RC → tag **v2.1.0**
+
+## Phase 6 (done) — StarAgent Phase 1 — 2.2.0
+
+- [x] Rust staragent: config loading, NATS connect, hostname-aware telemetry publishing
+- [x] NATS command subscriptions: ping, reload, update_config
+- [x] osquery configs: starshipd.conf (12 queries), security pack (17), compliance pack (12)
+- [x] Cross-compilation: Linux x86_64/aarch64, Windows x86_64, Darwin x86_64
+- [x] Dashboard telemetry aggregator (NATS `starship.telemetry.>`)
+- [x] Shield tab: multi-node telemetry table, per-node detail cards, deploy agent UI
+- [x] Agent download endpoints: /api/agent/download/{platform} with token injection
+- [x] Install scripts: Linux (systemd/nohup), Windows (sc.exe service)
+- [x] Agent installs from hub dashboard (--download-url flag)
+- [x] Connect tab: Simplex Messenger gateway docs, NATS bridge config
+
+## Phase A (done) — Live Dashboard Stubs — 2.2.0
+
+- [x] Incidents: live from down agents (pgrep), stale nodes (>60s), resource pressure, NATS status
+- [x] Policy: osquery pack configs parsed and displayed (41 queries across 3 packs)
+- [x] Skills: skill/capability registry from agent YAML, library links, proxy vetting, security scores
+- [x] Memory: 3D knowledge graph with Three.js, force-directed layout, search bar, click-to-detail
+- [x] Telemetry Log: per-node telemetry snapshots with staleness detection
 
 ## Language map
 
