@@ -1,11 +1,11 @@
 name: romi
 role: client_agent
-model: jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest
+model: romi:latest
 provider: ollama
 models:
-  default: jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest
+  default: romi:latest
   available:
-    - jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest
+    - romi:latest
     - qwen2.5:7b
     - qwen2.5:3b
   providers:
@@ -25,6 +25,58 @@ capabilities:
 skills:
   - knowledge-store
   - romi-interface
+  # Hermes bundled — creative & communication
+  - creative/architecture-diagram
+  - creative/excalidraw
+  - creative/sketch
+  - creative/claude-design
+  - creative/humanizer
+  - creative/p5js
+  - creative/ascii-art
+  - creative/baoyu-infographic
+  - creative/popular-web-designs
+  # Hermes bundled — productivity & knowledge
+  - note-taking/obsidian
+  - email/himalaya
+  - productivity/google-workspace
+  - productivity/notion
+  - productivity/maps
+  - productivity/nano-pdf
+  - productivity/ocr-and-documents
+  - productivity/powerpoint
+  # Hermes bundled — media & social
+  - media/youtube-content
+  - media/gif-search
+  - social-media/xurl
+  # Hermes bundled — research & smart-home
+  - research/arxiv
+  - research/blogwatcher
+  - smart-home/openhue
+  # Hermes optional — creative
+  - creative/baoyu-article-illustrator
+  - creative/baoyu-comic
+  - creative/concept-diagrams
+  - creative/creative-ideation
+  - creative/hyperframes
+  - creative/meme-generation
+  - creative/pixel-art
+  # Hermes optional — communication
+  - communication/one-three-one-rule
+  # Hermes optional — productivity
+  - productivity/canvas
+  - productivity/here-now
+  - productivity/memento-flashcards
+  # Hermes optional — email
+  - email/agentmail
+  # Hermes optional — health
+  - health/fitness-nutrition
+  # Hermes optional — research
+  - research/duckduckgo-search
+  - research/searxng-search
+  - research/qmd
+  - research/parallel-cli
+  # Hermes optional — payments
+  - payments/stripe-link-cli
 
 toolsets:
   - file_operations

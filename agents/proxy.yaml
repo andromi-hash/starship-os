@@ -1,11 +1,11 @@
 name: proxy
 role: tech_agent
-model: rafw007/qwen35-claude-coder:9b
+model: proxy:latest
 provider: ollama
 models:
-  default: rafw007/qwen35-claude-coder:9b
+  default: proxy:latest
   available:
-    - rafw007/qwen35-claude-coder:9b
+    - proxy:latest
     - qwen2.5:7b
     - qwen2.5:3b
   providers:
@@ -27,6 +27,80 @@ skills:
   - proxy-diagnostics
   - osint-threat
   - governance
+  # Hermes catalog — autonomous coding agents
+  - autonomous-ai-agents/opencode
+  - autonomous-ai-agents/claude-code
+  - autonomous-ai-agents/codex
+  # Hermes catalog — software engineering & testing
+  - software-development/test-driven-development
+  - software-development/systematic-debugging
+  - software-development/simplify-code
+  - software-development/python-debugpy
+  - software-development/node-inspect-debugger
+  # Hermes catalog — GitHub engineering workflow
+  - github/github-code-review
+  - github/github-pr-workflow
+  - github/github-auth
+  # Hermes catalog — ML ops
+  - mlops/huggingface-hub
+  - mlops/llama-cpp
+  - mlops/serving-llms-vllm
+  - mlops/weights-and-biases
+  - mlops/evaluating-llms-harness
+  - mlops/audiocraft-audio-generation
+  - mlops/segment-anything-model
+  # Hermes optional — additional coding agents
+  - autonomous-ai-agents/blackbox
+  - autonomous-ai-agents/grok
+  - autonomous-ai-agents/openhands
+  - autonomous-ai-agents/honcho
+  # Hermes optional — security & forensics
+  - security/1password
+  - security/oss-forensics
+  - security/sherlock
+  - security/unbroker
+  - security/web-pentest
+  # Hermes optional — devops & infrastructure
+  - devops/docker-management
+  - devops/pinggy-tunnel
+  - devops/watchers
+  - devops/inference-sh-cli
+  # Hermes optional — ML ops extended
+  - mlops/axolotl
+  - mlops/chroma
+  - mlops/clip
+  - mlops/dspy
+  - mlops/faiss
+  - mlops/optimizing-attention-flash
+  - mlops/guidance
+  - mlops/instructor
+  - mlops/unsloth
+  - mlops/whisper
+  - mlops/peft-fine-tuning
+  - mlops/pinecone
+  - mlops/qdrant-vector-search
+  - mlops/stable-diffusion-image-generation
+  - mlops/tensorrt-llm
+  - mlops/pytorch-lightning
+  - mlops/pytorch-fsdp
+  - mlops/huggingface-accelerate
+  - mlops/lambda-labs-gpu-cloud
+  - mlops/modal-serverless-gpu
+  - mlops/nemo-curator
+  - mlops/outlines
+  - mlops/simpo-training
+  - mlops/distributed-llm-pretraining-torchtitan
+  - mlops/fine-tuning-with-trl
+  - mlops/sparse-autoencoder-training
+  - mlops/slime-rl-training
+  - mlops/llava
+  - mlops/huggingface-tokenizers
+  # Hermes optional — web dev
+  - web-development/cloudflare-temporary-deploy
+  # Hermes optional — API debugging
+  - software-development/rest-graphql-debug
+  # Hermes catalog — systems
+  - computer-use/computer-use
 
 toolsets:
   - terminal

@@ -1,11 +1,11 @@
 name: ergo
 role: automation_agent
-model: qwen2.5:7b
+model: ergo:latest
 provider: ollama
 models:
-  default: qwen2.5:7b
+  default: ergo:latest
   available:
-    - qwen2.5:7b
+    - ergo:latest
     - qwen2.5:3b
   providers:
     openrouter:
@@ -25,6 +25,51 @@ skills:
   - ergo-automation
   - orchestrate-failover
   - flamingo-fleet
+  # Hermes catalog — planning & oversight
+  - software-development/plan
+  - software-development/spike
+  - software-development/hermes-agent-skill-authoring
+  - software-development/requesting-code-review
+  # Hermes catalog — repository & codebase intelligence
+  - github/codebase-inspection
+  - github/github-issues
+  - github/github-repo-management
+  # Hermes catalog — research & data
+  - research/llm-wiki
+  - research/polymarket
+  - data-science/jupyter-live-kernel
+  - research/research-paper-writing
+  - dogfood/dogfood
+  # Hermes optional — research & intel
+  - research/domain-intel
+  - research/osint-investigation
+  - research/darwinian-evolver
+  - research/gitnexus-explorer
+  - research/scrapling
+  - research/drug-discovery
+  - research/bioinformatics
+  # Hermes optional — finance & blockchain
+  - finance/stocks
+  - finance/excel-author
+  - finance/pptx-author
+  - finance/3-statement-model
+  - finance/dcf-model
+  - finance/comps-analysis
+  - finance/lbo-model
+  - finance/merger-model
+  - blockchain/evm
+  - blockchain/solana
+  - blockchain/hyperliquid
+  # Hermes optional — MCP & subagents
+  - mcp/fastmcp
+  - mcp/mcporter
+  - mcp/mcp-oauth-remote-gateway
+  - software-development/subagent-driven-development
+  - software-development/code-wiki
+  # Hermes optional — migration & payments
+  - migration/openclaw-migration
+  - payments/mpp-agent
+  - payments/stripe-projects
 
 toolsets:
   - terminal
