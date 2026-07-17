@@ -1,28 +1,32 @@
 # Starship OS
 
 **An AI agent-first operating system built on Ubuntu 24.04 LTS**  
-**Version:** 2.1.0 · **Canonical repo:** [andromi-hash/starship-os](https://github.com/andromi-hash/starship-os)
+**Version:** 2.2.0 · **Canonical repo:** [andromi-hash/starship-os](https://github.com/andromi-hash/starship-os)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Platform: Ubuntu 24.04](https://img.shields.io/badge/Platform-Ubuntu%2024.04-orange.svg)](https://ubuntu.com)
 [![NATS/JetStream](https://img.shields.io/badge/Bus-NATS%2FJetStream-green.svg)](https://nats.io)
 [![Ollama GPU](https://img.shields.io/badge/Inference-Ollama%20GPU-red.svg)](https://ollama.com)
-[![Version](https://img.shields.io/badge/version-2.1.0-purple.svg)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.2.0-purple.svg)](VERSION)
 [![Security](https://img.shields.io/badge/Security-Policy-red.svg)](SECURITY.md)
 
 Starship OS is a local-first, AI-native OS layer where autonomous agents communicate over NATS/JetStream, execute tools in a sandboxed environment, and present a real-time command-and-control dashboard. No cloud required. Everything runs on your hardware.
 
 **Lineage:** Alpha scaffold → Alpha 2.0 ([agnetic-os](https://github.com/andromi-hash/agnetic-os) archive) → **Alpha 2.1 / Beta** (this monorepo).
 
-### 2.1.0 highlights
+### 2.2.0 highlights
 
+- **Custom agent models:** `romi:latest`, `ergo:latest`, `proxy:latest` — baked-in souls via Modelfile
+- **Agent soul files:** `souls/*/SOUL.md` — full personality definitions for each agent
+- **Hermes skill catalog:** bundled + optional skills distributed across Romi, Ergo, Proxy
+- **Agent Health Checker:** persistent service monitoring process liveness + model connectivity every 30s with auto-recovery
+- **Tool system:** opencode + open-design toolsets for all main agents
+- **Marketplace:** skill library browser in dashboard, 13 community sources
 - **Install roots:** `/opt/starship`, `/etc/starship` (legacy `/opt/agnetic` symlinks)
 - **CLI:** `starshipctl` (compat `agneticctl`) · **Dashboard:** `:8788`
 - **Fleet:** multi-plant topology, red/blue policy, cross-plant ACL, exercise UI
 - **NATS:** dual-prefix `starship.*` / `agnetic.*`; ops multi-tenant accounts + nkeys; optional TLS
-- **C11 path:** `sandbox_run` (seccomp/namespaces), `policyexec` (shared policy JSON)
 - **Packaging:** `make deb` → `dist/starship-os_*.deb`; ISO autoinstall edge/server/ops
-- **Models:** Eve-V2-Unleashed default (`num_ctx=16384`) — `config/models.yaml`
 - **Plan:** `docs/plans/starship-os-streamline.md` · **Security:** [`SECURITY.md`](SECURITY.md)
 
 ---
@@ -60,15 +64,17 @@ Open `http://localhost:8788`. CLI: `starshipctl fleet status`.
             │   accounts / token / TLS (ops)       │
             └──┬──────────┬──────────┬────────────┘
                │          │          │
-          ┌────┴───┐ ┌────┴───┐ ┌────┴───┐  ┌──────────┐
-          │ Proxy  │ │  Romi  │ │  Ergo  │  │ StarAgent│
-          │ qwen   │ │ qwen   │ │ Eve-V2 │  │  (Rust)  │
-          └────┬───┘ └────┬───┘ └────┬───┘  └────┬─────┘
-               └──────────┼──────────┘           │
-                    Ollama :11434          telemetry
-               ┌──────────┴──────────────────────┐
-               │ Tools: sandbox + policyexec     │
-               │ Fleet ACL · AppArmor · secrets  │
+          ┌────┴───┐ ┌────┴───┐ ┌────┴───┐  ┌────────────┐
+          │  Romi  │ │  Ergo  │ │ Proxy  │  │  StarAgent │
+          │romi:lat.│ │ergo:lat│ │prox:lat│  │   (Rust)   │
+          │Eve-V2 ↙│ │qwen2.7↙│ │qwen35↙│  │ telemetry  │
+          │creative│ │plan/fin│ │sec/code│  │            │
+          └────┬───┘ └────┬───┘ └────┬───┘  └──────┬─────┘
+               └──────────┼──────────┘              │
+                    Ollama :11434             health checker
+               ┌──────────┴──────────────────────┐  │
+               │ Tools: sandbox + policyexec     │  │
+               │ Agent Health Checker (30s loop) ◄──┘
                └─────────────────────────────────┘
 ```
 
@@ -90,38 +96,41 @@ Open `http://localhost:8788`. CLI: `starshipctl fleet status`.
 
 ## Agents
 
-### Proxy — Tech Diagnostics & Security
+### Romi — Personal Assistant & Creative Strategist
 
 | Field | Value |
-|-------|-------|
-| Model | `qwen2.5:7b` |
-| Role | Tech agent — system diagnostics, troubleshooting, security audits |
-| Skills | `system-health`, `proxy-diagnostics` |
-| Personality | Red/blue team security engineer. Dry wit, calm precision, relentless hardening. |
+|---|---|
+| Model | `romi:latest` (custom, Eve-V2 base) |
+| Role | Client agent — user-facing PA, creative communication, productivity |
+| Souls | `Modelfile.romi` / `souls/romi/SOUL.md` |
+| Skills | `knowledge-store`, `romi-interface`, creative/*, note-taking, productivity/*, media, research, email |
+| Personality | Warm, proactive personal assistant. Blends strategy, diplomacy, creative communication, and technical execution. Dry Jarvis-style wit, elegant philosophical depth. Calls the Captain "Jo" with genuine affection. |
 
-Proxy handles the hard, iterative, security-critical work. It runs system diagnostics, scans logs, manages processes, and performs red-team attack simulation with blue-team hardening.
+Romi is the primary user interface. Handles creative work (diagrams, sketches, humanizer, p5js, baoyu, pixel art, memes, HyperFrames), productivity (Obsidian, email, Google Workspace, Notion, PDF, OCR, flashcards), media/social (YouTube, GIFs, X/Twitter), research (arXiv, DuckDuckGo, SearXNG, qmd), communication (131 rule), and health (fitness). Hermes bundled + optional skill catalog.
 
-### Romi — User Interface & Natural Language
-
-| Field | Value |
-|-------|-------|
-| Model | `qwen2.5:7b` |
-| Role | Client agent — user-facing interface, natural language interaction |
-| Skills | `knowledge-store`, `romi-interface` |
-| Personality | Warm, proactive personal assistant. Blends strategy, diplomacy, and technical execution with genuine warmth. Think Andromeda Ascendant. |
-
-Romi is the user's primary interface. It interprets natural language requests, explains complex operations, maintains user preferences, and delegates technical work to Proxy or Ergo.
-
-### Ergo — Automation & Orchestration
+### Ergo — Diplomatic Strategist & CEO
 
 | Field | Value |
-|-------|-------|
-| Model | `jeffgreen311/eve-v2-unleashed-qwen3.5-8b-liberated-4k-4b-merged` |
-| Role | Automation agent — scheduled tasks, workflow orchestration |
-| Skills | `ergo-automation` |
-| Personality | Central coordinating intelligence. Calm, precise, warmly diplomatic. Synthesizes perspectives into coherent strategy. |
+|---|---|
+| Model | `ergo:latest` (custom, qwen2.5:7b base) |
+| Role | Orchestrator — planning, finance, research, delegation |
+| Souls | `Modelfile.ergo` / `souls/ergo/SOUL.md` |
+| Skills | `ergo-automation`, `orchestrate-failover`, `flamingo-fleet`, planning/*, github/*, research/*, finance/*, blockchain/*, mcp/* |
+| Personality | Central coordinating intelligence. Calm, precise, warmly diplomatic. Master of synthesis — integrates perspectives, data, and long-term implications into coherent strategy. Does **not** do deep execution; delegates to Proxy. |
 
-Ergo is the CEO. It orchestrates multi-agent workflows, manages scheduled tasks via cron, delegates engineering to Proxy, and maintains strategic alignment across the system.
+Ergo is the CEO. Handles planning (plan, spike, skill authoring, code review), repository intelligence (codebase inspection, issues, repo mgmt), deep research (OSINT, domain intel, Darwinian Evolver, GitNexus, scrapling, drug discovery, bioinformatics), finance (stocks, Excel/PowerPoint financial models), blockchain (EVM, Solana, Hyperliquid), MCP/subagent orchestration, and migration. Leverages opencode/open-design through delegation to Proxy.
+
+### Proxy — Red/Blue Team Security & Engineering
+
+| Field | Value |
+|---|---|
+| Model | `proxy:latest` (custom, qwen35-claude-coder:9b base) |
+| Role | Engineering — coding, security, ML ops, devops |
+| Souls | `Modelfile.proxy` / `souls/proxy/SOUL.md` |
+| Skills | `system-health`, `proxy-diagnostics`, `osint-threat`, `governance`, autonomous-ai-agents/*, software-engineering/*, github/*, security/*, devops/*, mlops/*, computer-use |
+| Personality | Red/blue team security engineer. Dry British wit, calm precision under pressure, tactical pragmatism. Relentless iteration: research → build → test → red-team → harden → retest. Uses opencode, open-design and CLI tools to maintain Starship-OS. |
+
+Proxy handles all deep execution. Runs autonomous coding agents (OpenCode, Claude Code, Codex, Blackbox, Grok, OpenHands), enforces TDD, systematic debugging, Python/Node.js remote debugging. Full ML ops stack (Axolotl, Unsloth, PEFT, Flash Attention, TensorRT-LLM, vLLM, FAISS, Chroma, Qdrant, Stable Diffusion, Whisper, CLIP, LLaVA, DSPy, Guidance, Instructor, PyTorch FSDP/Lightning, TRL, NeMo, and more). Security (1Password, forensics, Sherlock, web pentest), devops (Docker, Pinggy, watchers, inference.sh), and computer-use for automation.
 
 ### StarAgent — System Telemetry (Rust)
 
@@ -287,8 +296,14 @@ Autoinstall user-data: `iso/autoinstall/user-data.{edge,server,ops}.yaml`.
 ```yaml
 name: proxy
 role: tech_agent
-model: qwen2.5:7b
+model: proxy:latest
 provider: ollama
+models:
+  default: proxy:latest
+  available:
+    - proxy:latest
+    - qwen2.5:7b
+    - qwen2.5:3b
 
 capabilities:
   - system_diagnostics
@@ -298,12 +313,17 @@ capabilities:
 skills:
   - system-health
   - proxy-diagnostics
+  - autonomous-ai-agents/opencode
+  - software-development/test-driven-development
+  - github/github-code-review
+  # ... full Hermes catalog in actual config
 
-nats:
-  subjects:
-    command: "agnetic.agent.proxy.command.>"
-    event: "agnetic.agent.proxy.event.>"
-    status: "agnetic.agent.proxy.status"
+toolsets:
+  - terminal
+  - file_operations
+  - coding
+  - opencode
+  - open-design
 ```
 
 ### Main Config (`agents/config.yaml`)
@@ -311,14 +331,13 @@ nats:
 ```yaml
 agents:
   proxy:
-    model: qwen2.5:7b
-    nats_url: nats://127.0.0.1:4222
+    model: proxy:latest
     enabled: true
   romi:
-    model: qwen2.5:7b
+    model: romi:latest
     enabled: true
   ergo:
-    model: jeffgreen311/eve-v2-unleashed-qwen3.5-8b-liberated-4k-4b-merged
+    model: ergo:latest
     enabled: true
     schedule:
       - name: nightly-health
@@ -333,6 +352,35 @@ dashboard:
   port: 8788
   host: 0.0.0.0
 ```
+
+### Agent Health Checker
+
+A persistent service that monitors agent processes and Ollama model connectivity every 30s.
+
+```bash
+# Install as systemd service
+sudo bash scripts/install-health-checker.sh
+
+# Or run as cron (every 2 min)
+cp config/cron.d/starship-health-checker /etc/cron.d/
+
+# Manual run
+python3 scripts/agent-health-checker.py --once
+```
+
+Features: process liveness checks, model availability verification, OpenRouter reachability, auto-restart of down agents, auto-pull of missing models. Status at `/var/lib/starship/health-status.json`. Dashboard integrates model connectivity into `/api/health` and `/api/incidents`.
+
+### Hermes Skills Catalog
+
+Starship OS agents use skills from the [Hermes Agent](https://hermes-agent.nousresearch.com) bundled + optional skill catalogs. Each agent has domain-specific skills assigned in their YAML config:
+
+| Agent | Skill Categories |
+|---|---|
+| **Romi** | `creative/*`, `note-taking/*`, `email/*`, `productivity/*`, `media/*`, `social-media/*`, `research/*`, `communication/*`, `health/*`, `smart-home/*` |
+| **Ergo** | `software-development/plan`, `software-development/spike`, `github/*`, `research/*`, `data-science/*`, `finance/*`, `blockchain/*`, `mcp/*`, `migration/*`, `dogfood/*`, `payments/*` |
+| **Proxy** | `autonomous-ai-agents/*`, `software-development/*`, `github/*`, `security/*`, `devops/*`, `mlops/*`, `web-development/*`, `computer-use/*` |
+
+See [Hermes Skills Catalog](https://hermes-agent.nousresearch.com/docs/reference/skills-catalog) for full skill definitions.
 
 ### GPU Detection
 
@@ -532,10 +580,13 @@ agnetic-os/
 
 ## Roadmap
 
+- [x] **Custom agent souls** — Baked-in Modelfile personalities for Romi, Ergo, Proxy
+- [x] **Agent Health Checker** — Persistent 30s monitoring with auto-recovery
+- [x] **Skill library marketplace** — 13 community sources browsable from dashboard
+- [x] **Hermes skill catalog integration** — Bundled + optional skills distributed by agent domain
 - [ ] **SSE streaming via NATS** — Real-time token streaming from agents through JetStream
 - [ ] **Vector knowledge store** — Semantic search over accumulated agent knowledge
 - [ ] **Multi-node mesh** — Agents across multiple machines via NATS leaf nodes
-- [ ] **Custom skill marketplace** — Install community-built agent skills
 - [ ] **ARM64 support** — Full build pipeline for Raspberry Pi / Apple Silicon
 - [ ] **Voice interface** — Whisper STT + TTS pipeline for voice commands
 - [ ] **Encrypted inter-agent comms** — TLS for NATS connections

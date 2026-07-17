@@ -5,10 +5,10 @@ A native AI operating system for complex system control. AI agents are first-cla
 ## Architecture
 
 ```
-User/Opencode → Hermes Orchestrator
-                 ├── Proxy (tech diagnostics, troubleshooting)
-                 ├── Romi (user interface, natural language)
-                 ├── Ergo (automation, scheduled tasks)
+User/Opencode → Agent Team
+                 ├── Romi (PA & Creative Strategist)
+                 ├── Ergo (Diplomatic Strategist & CEO)
+                 ├── Proxy (Red/Blue Security & Engineering)
                  └── StarAgent (Rust, system metric collection)
                         ↕ NATS/JetStream bus
                               ↕ Starship Dashboard (web C2)
@@ -16,12 +16,14 @@ User/Opencode → Hermes Orchestrator
 
 ## Agents
 
-| Agent | Role | Model |
-|---|---|---|
-| **Proxy** | Tech diagnostics, coding, system queries | `rafw007/qwen35-claude-coder:9b` (ollama) |
-| **Romi** | User-facing interface, NL interaction | `jeffgreen311/eve-v2-unleashed-qwen3.5-8b-liberated-4k-4b-merged` (ollama) |
-| **Ergo** | Automation, scheduled workflows | `qwen2.5:7b` (ollama) |
-| **StarAgent** | Cross-platform system monitor (Rust) | N/A (binary) |
+| Agent | Role | Model | Soul |
+|---|---|---|---|
+| **Romi** | Personal Assistant & Creative Strategist | `romi:latest` (Eve-V2 base, Ollama) | `Modelfile.romi` — warm, proactive, creative |
+| **Ergo** | Diplomatic Strategist & CEO | `ergo:latest` (qwen2.5:7b base, Ollama) | `Modelfile.ergo` — orchestrator, planner |
+| **Proxy** | Red/Blue Security & Engineering | `proxy:latest` (qwen35-claude-coder:9b base, Ollama) | `Modelfile.proxy` — security engineer |
+| **StarAgent** | Cross-platform system monitor (Rust) | N/A (binary) | — |
+
+Skills distributed from Hermes Agent catalog: Romi (creative, productivity, media), Ergo (planning, finance, blockchain, MCP), Proxy (coding agents, ML ops, security, devops). Health checker service monitors agent processes and model connectivity every 30s with auto-recovery. See `souls/*/SOUL.md` for full agent personalities.
 
 ## Dashboard Tabs
 
@@ -52,6 +54,14 @@ User/Opencode → Hermes Orchestrator
 - Telemetry: `starship.telemetry.{hostname}.{table}`
 - Commands: `starship.agent.{agent}.command.{command}`
 - Dual-publish on legacy `agnetic.*` (Alpha 2.0 compat)
+
+## Health Checker
+
+- `scripts/agent-health-checker.py` — Persistent service (systemd or cron)
+- Checks every 30s: agent process liveness, Ollama model availability, OpenRouter reachability
+- Auto-recovery: restarts down agents, pulls missing models
+- Status: `/var/lib/starship/health-status.json` or `/tmp/starship-health.json`
+- Dashboard integrates into `/api/health` and `/api/incidents`
 
 ## Commands
 
